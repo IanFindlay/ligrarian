@@ -108,13 +108,6 @@ def input_info(sheet_name):
     sheet.cell(row=input_row, column=5).value = GENRE
     sheet.cell(row=input_row, column=6).value = DATE
 
-    # Edit Formulas - Most Read Author, Most Read Genre
-    sheet['I11'] = ('=INDEX($B$2:$B${0},MODE(MATCH($B$2:$B${0},$B$2:$B${0},0)'
-                    '))'.format(input_row))
-
-    sheet['I14'] = ('=INDEX($E$2:$E${0},MODE(MATCH($E$2:$E${0},$E$2:$E${0},0)'
-                    '))'.format(input_row))
-
 
 input_info('20' + YEAR)
 input_info('Overall')
