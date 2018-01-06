@@ -1,5 +1,5 @@
 # Booktracker
-Automatically updates my 'Books Read' spreadsheet using information from the book's [Goodreads](https://www.goodreads.com/) page. The information includes:  
+Automatically updates my 'Books Read' spreadsheet (both this year's sheet and an 'Overall' sheet) using information from the book's [Goodreads](https://www.goodreads.com/) page. The information includes:  
 
 **Book Title**  
 **Series Name and Book # in Series (if applicable)**  
@@ -8,6 +8,4 @@ Automatically updates my 'Books Read' spreadsheet using information from the boo
 **Fiction or Nonfiction**  
 **Genre**  
 
-It also adds **Date Finished** - which defaults to today but can be set to yesterday's date or a custom date through a sys argument
-
-All this is done to both the current years tracking sheet and the 'Overall' sheet.
+It also adds **Date Finished** - which defaults to today but can be set to yesterday's date or a custom date through the sys arguments 'y' or 'c'.
