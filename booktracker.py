@@ -2,6 +2,7 @@
 
 """Automatically updates Books Read spreadsheet and Goodreads account."""
 
+import configparser
 import sys
 import time
 import datetime
@@ -92,6 +93,10 @@ def goodreads_find():
 
     return BROWSER.current_url
 
+
+MONTH_CONV = {'01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May',
+              '06': 'June', '07': 'July', '08': 'Aug', '09': 'Sep', '10': 'Oct',
+              '11': 'Nov', '12': 'Dec'}
 
 def goodreads_update():
     """Update Goodreads by marking book as read and adding information."""
@@ -213,17 +218,13 @@ def input_info(sheet_name):
     sheet.cell(row=input_row, column=6).value = DATE_READ
 
 
-with open('/home/finners/Documents/Coding/Python/Booktracker/config') as f:
-    INFO = f.readlines()
-    USERNAME = INFO[0].strip()
-    PASSWORD = INFO[1].strip()
-    PATH = INFO[2].strip()
+CONFIG = configparser.ConfigParser()
+CONFIG.read('/home/finners/Documents/Coding//Python/Booktracker/settings.ini')
+USERNAME = CONFIG.get('User', 'Username')
+PASSWORD = CONFIG.get('User', 'Password')
+PATH = CONFIG.get('Spreadsheet', 'Path')
 
 DATE_READ = get_date()
-
-MONTH_CONV = {'01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May',
-              '06': 'June', '07': 'July', '08': 'Aug', '09': 'Sep', '10': 'Oct',
-              '11': 'Nov', '12': 'Dec'}
 
 print('Opening a computer controlled browser window and updating Goodreads...')
 BROWSER = webdriver.Firefox()
