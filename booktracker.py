@@ -13,46 +13,53 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
 
-with open('config') as f:
+with open('/home/finners/Documents/Coding/Python/Booktracker/config') as f:
     INFO = f.readlines()
     USERNAME = INFO[0].strip()
     PASSWORD = INFO[1].strip()
     PATH = INFO[2].strip()
 
 # Determine the date (DD/MM/YY) to write as book finished
-TODAY = datetime.datetime.now()
+def get_date():
+    """Return the date the book was read formatted (DD/MM/YY)."""
+    today = datetime.datetime.now()
 
-date_day = TODAY.day
-if len(str(date_day)) == 1:
-    date_day = '0' + str(date_day)
-date_month = TODAY.month
-if len(str(date_month)) == 1:
-    date_month = '0' + str(date_month)
+    date_day = today.day
+    if len(str(date_day)) == 1:
+        date_day = '0' + str(date_day)
+    date_month = today.month
+    if len(str(date_month)) == 1:
+        date_month = '0' + str(date_month)
 
-date_year = str(TODAY.year)[-2:]
+    date_year = str(today.year)[-2:]
 
-if len(sys.argv) == 4:
-    DATE = '{}/{}/{}'.format(date_day, date_month, date_year)
+    if len(sys.argv) == 4:
+        date = '{}/{}/{}'.format(date_day, date_month, date_year)
 
-else:
-    DATE_READ = sys.argv[4]
+    else:
+        date_read = sys.argv[4]
 
-    if DATE_READ == 'y':
-        if date_day != 1:
-            DATE = '{}/{}/{}'.format('0' + str(int(date_day) - 1), date_month, date_year)
-        else:
-            YESTERDAY = datetime.datetime.now() - timedelta(days=1)
+        if date_read == 'y':
+            if date_day != 1:
+                date = '{}/{}/{}'.format('0' + str(int(date_day) - 1),
+                                         date_month, date_year)
+            else:
+                yesterday = datetime.datetime.now() - timedelta(days=1)
 
-            date_day = YESTERDAY.day
-            date_month = YESTERDAY.month
-            if len(str(date_month)) == 1:
-                date_month = '0' + str(date_month)
-            date_year = str(YESTERDAY.year)[-2:]
+                date_day = yesterday.day
+                date_month = yesterday.month
+                if len(str(date_month)) == 1:
+                    date_month = '0' + str(date_month)
+                date_year = str(yesterday.year)[-2:]
 
-            DATE = '{}/{}/{}'.format(date_day, date_month, date_year)
+                date = '{}/{}/{}'.format(date_day, date_month, date_year)
 
-    elif DATE_READ == 'c':
-        DATE = input('Enter the date the book was finished: ')
+        elif date_read == 'c':
+            date = input('Enter the date the book was finished: ')
+
+    return date
+
+DATE_READ = get_date()
 
 MONTH_CONV = {'01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May',
               '06': 'June', '07': 'July', '08': 'Aug', '09': 'Sep', '10': 'Oct',
@@ -124,11 +131,11 @@ year_elem.send_keys('2', Keys.ENTER)
 
 month_elem = browser.find_element_by_class_name('endedAtMonth.largePicker.readingSessionDatePicker')
 month_elem.click()
-month_elem.send_keys(MONTH_CONV[date_month], Keys.ENTER)
+month_elem.send_keys(MONTH_CONV[DATE_READ[3:5]], Keys.ENTER)
 
 day_elem = browser.find_element_by_class_name('endedAtDay.readingSessionDatePicker.smallPicker')
 day_elem.click()
-day_elem.send_keys(str(date_day), Keys.ENTER)
+day_elem.send_keys(str(DATE_READ[0:2]), Keys.ENTER)
 
 # Save review
 save_elem = browser.find_element_by_name('next')
@@ -167,6 +174,8 @@ if SERIES_ELEM != []:
     TITLE = BOOK_TITLE + ' ' + SERIES
 else:
     TITLE = TITLE_ELEM[0].getText().strip()
+
+print(TITLE)
 
 AUTHOR_ELEM = SOUP.select('.authorName')
 AUTHOR = AUTHOR_ELEM[0].getText().strip()
@@ -208,10 +217,10 @@ def input_info(sheet_name):
     sheet.cell(row=input_row, column=3).value = int(PAGES)
     sheet.cell(row=input_row, column=4).value = TYPE
     sheet.cell(row=input_row, column=5).value = GENRE
-    sheet.cell(row=input_row, column=6).value = DATE
+    sheet.cell(row=input_row, column=6).value = DATE_READ
 
 
-input_info('20' + date_year)
+input_info('20' + DATE_READ[-2:])
 input_info('Overall')
 
 WB.save(PATH)
@@ -220,4 +229,5 @@ print('Spreadsheet has been updated.')
 
 # TODO Organise code into seperate functions
 # TODO Rewrite BS4 TAG system as Type and Genre can be found from the list 'Shelves'
+# TODO Rewrite title / series using seperaet getText's
 # TODO Make constants and variables naming uniform and PEP8 compliant
