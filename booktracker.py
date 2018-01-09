@@ -30,7 +30,7 @@ def get_date():
         date = '{}/{}/{}'.format(date_day, date_month, date_year)
 
     else:
-        date_read = sys.argv[4]
+        date_read = sys.argv[4].lower()
 
         if date_read == 'y':
             if date_day != 1:
@@ -48,7 +48,7 @@ def get_date():
                 date = '{}/{}/{}'.format(date_day, date_month, date_year)
 
         elif date_read == 'c':
-            date = input('Enter the date the book was finished: ')
+            date = input('Enter the date the book was finished (DD/MM/YY): ')
 
     return date
 
@@ -80,7 +80,7 @@ def goodreads_find():
     editions_elem.click()
 
     # Format
-    book_format = sys.argv[2]
+    book_format = sys.argv[2].lower()
     filter_elem = BROWSER.find_element_by_name('filter_by_format')
     filter_elem.click()
     filter_elem.send_keys(book_format)
@@ -162,15 +162,12 @@ def parse_page():
 
     title_elem = soup.select('#bookTitle')
 
-    series_elem = soup.select('#bookTitle > .greyText')
-    if series_elem != []:
-        series = series_elem[0].getText().strip()
-        book_title = title_elem[0].getText().strip().strip(series).strip()
-        title = book_title + ' ' + series
+    rough_title = title_elem[0].getText().strip().split('\n')
+    if len(rough_title) == 1:
+        title = rough_title[0].strip()
     else:
-        title = title_elem[0].getText().strip()
+        title = rough_title[0].strip() + ' ' + rough_title[2].strip()
 
-    print(title)
     info_list.append(title)
 
     author_elem = soup.select('.authorName')
@@ -250,5 +247,4 @@ print('Spreadsheet has been updated.')
 print('Booktracker has completed updating both the website and the spreadsheet'
       ' and will now close.')
 
-# TODO Rewrite title / series using seperate getText's
 # TODO Replace time.sleep's with Selenium waits
