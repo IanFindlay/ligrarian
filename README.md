@@ -1,11 +1,20 @@
 # Booktracker
-Automatically updates my 'Books Read' spreadsheet (both this year's sheet and an 'Overall' sheet) using information from the book's [Goodreads](https://www.goodreads.com/) page. The information includes:  
+Booktracker takes three obligatory sys arguments: [Book Title Author Name] [Format]-('h'ardback | 'k'indle | 'p'aperback) [Star Rating]  
+and a fourth optional argument: [Date Read]-(which defaults to today's date but can be set to 'y'esterday or a 'c'ustom date) and:
 
-**Book Title**  
-**Series Name and Book # in Series (if applicable)**  
-**Author**  
-**Number of Pages**  
-**Fiction or Nonfiction**  
-**Genre**  
+  * Automatically updates your [Goodreads](https://www.goodreads.com/) account by doing the following:  
 
-It also adds **Date Finished** - which defaults to today but can be set to yesterday's date or a custom date through the sys arguments 'y' or 'c'.
+    * **Finds the book in the format the user specifies and marks it as read**  
+    * **Sets the 'Date Finshed' to a user specified date**  
+    * **Sets the books rating to a user specified number of stars**  
+    * **Shelves the book based upon the users pre-existing shelves and the sites 'Top Shelves' for the book'**  
+
+  * Automtically updates a spreadsheet with the following info derived from the book's Goodreads page:
+
+    * **Book Title**  
+    * **Series Name and Book # in Series (if applicable)**  
+    * **Author**  
+    * **Number of Pages**  
+    * **Category (Fiction or Nonfiction)**  
+    * **Primary Genre**  
+    * This information, alongside **Date Finished** is added to both this year's sheet and an overall sheet.
