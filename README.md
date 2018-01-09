@@ -7,7 +7,7 @@ and a fourth optional argument: [Date Read]-(defaults to today's date but can be
     * **Finds the book in the format the user specifies and marks it as read**  
     * **Sets the 'Date Finshed' to a user specified date**  
     * **Sets the books rating to a user specified number of stars**  
-    * **Shelves the book based upon the users pre-existing shelves and the sites 'Top Shelves' for the book'**  
+    * **Shelves the book based upon the users pre-existing shelves and the sites 'Top Shelves' for the book**  
 
   * Automtically updates a spreadsheet with the following info derived from the book's Goodreads page:
 
