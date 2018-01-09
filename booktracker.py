@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-"""Automatically updates Books Read spreadsheet and Goodreads."""
+"""Automatically updates Books Read spreadsheet and Goodreads account."""
 
 import sys
 import time
@@ -55,86 +55,86 @@ def get_date():
 
 def goodreads_find():
     """Find the correct book, in the correct format, on Goodreads."""
-    browser.get('https://goodreads.com')
+    BROWSER.get('https://goodreads.com')
 
     # Login
-    email_elem = browser.find_element_by_name('user[email]')
+    email_elem = BROWSER.find_element_by_name('user[email]')
     email_elem.send_keys(USERNAME)
-    pass_elem = browser.find_element_by_name('user[password]')
+    pass_elem = BROWSER.find_element_by_name('user[password]')
     pass_elem.send_keys(PASSWORD)
     pass_elem.send_keys(Keys.ENTER)
     time.sleep(5)
 
     # Find correct book and edition
     search_terms = sys.argv[1]
-    search_elem = browser.find_element_by_class_name('searchBox__input')
+    search_elem = BROWSER.find_element_by_class_name('searchBox__input')
     search_elem.send_keys(search_terms + '%3Dauthor')
     search_elem.send_keys(Keys.ENTER)
     time.sleep(3)
 
-    title_elem = browser.find_element_by_class_name('bookTitle')
+    title_elem = BROWSER.find_element_by_class_name('bookTitle')
     title_elem.click()
     time.sleep(3)
 
-    editions_elem = browser.find_element_by_class_name('otherEditionsLink')
+    editions_elem = BROWSER.find_element_by_class_name('otherEditionsLink')
     editions_elem.click()
 
     # Format
     book_format = sys.argv[2]
-    filter_elem = browser.find_element_by_name('filter_by_format')
+    filter_elem = BROWSER.find_element_by_name('filter_by_format')
     filter_elem.click()
     filter_elem.send_keys(book_format)
     filter_elem.send_keys(Keys.ENTER)
     time.sleep(3)
 
-    book_elem = browser.find_element_by_class_name('bookTitle')
+    book_elem = BROWSER.find_element_by_class_name('bookTitle')
     book_elem.click()
 
-    return browser.current_url
+    return BROWSER.current_url
 
 
 def goodreads_update():
     """Update Goodreads by marking book as read and adding information."""
     # Mark as Read
-    menu_elem = browser.find_element_by_class_name('wtrRight.wtrUp')
+    menu_elem = BROWSER.find_element_by_class_name('wtrRight.wtrUp')
     menu_elem.click()
     time.sleep(1)
     menu_elem.send_keys(Keys.TAB, Keys.TAB, Keys.TAB, Keys.ENTER)
     time.sleep(3)
 
     # Date Selection
-    year_elem = browser.find_element_by_class_name('endedAtYear.readingSession'
+    year_elem = BROWSER.find_element_by_class_name('endedAtYear.readingSession'
                                                    'DatePicker.smallPicker')
     year_elem.click()
     time.sleep(1)
     year_elem.send_keys('2', Keys.ENTER)
 
-    month_elem = browser.find_element_by_class_name('endedAtMonth.largePicker'
+    month_elem = BROWSER.find_element_by_class_name('endedAtMonth.largePicker'
                                                     '.readingSessionDatePicker')
     month_elem.click()
     month_elem.send_keys(MONTH_CONV[DATE_READ[3:5]], Keys.ENTER)
 
-    day_elem = browser.find_element_by_class_name('endedAtDay.readingSession'
+    day_elem = BROWSER.find_element_by_class_name('endedAtDay.readingSession'
                                                   'DatePicker.smallPicker')
     day_elem.click()
     day_elem.send_keys(str(DATE_READ[0:2]), Keys.ENTER)
 
     # Save review
-    save_elem = browser.find_element_by_name('next')
+    save_elem = BROWSER.find_element_by_name('next')
     save_elem.click()
 
     # Shelf selection
-    shelves_elems = browser.find_elements_by_class_name('actionLinkLite.'
+    shelves_elems = BROWSER.find_elements_by_class_name('actionLinkLite.'
                                                         'bookPageGenreLink')
     shelves = []
     for shelf in shelves_elems:
         if ' users' not in shelf.text and shelf.text not in shelves:
             shelves.append(shelf.text)
 
-    menu_elem = browser.find_element_by_class_name('wtrRight.wtrDown')
+    menu_elem = BROWSER.find_element_by_class_name('wtrRight.wtrDown')
     menu_elem.click()
     time.sleep(1)
-    shelf_search_elem = browser.find_element_by_class_name('wtrShelfSearchField')
+    shelf_search_elem = BROWSER.find_element_by_class_name('wtrShelfSearchField')
 
     for i in range(len(shelves)):
         shelf_search_elem.send_keys(shelves[i], Keys.ENTER)
@@ -144,7 +144,7 @@ def goodreads_update():
 
     # Give star rating
     rating = sys.argv[3]
-    stars_elem = browser.find_elements_by_class_name('star.off')
+    stars_elem = BROWSER.find_elements_by_class_name('star.off')
     for stars in stars_elem:
         if stars.text.strip() == '{} of 5 stars'.format(rating):
             stars.click()
@@ -154,7 +154,7 @@ def goodreads_update():
 
 
 def parse_page():
-    """Parse page information needed for updating the spreadsheet."""
+    """Parse and return page information needed for updating the spreadsheet."""
     info_list = []
     res = requests.get(URL)
     res.raise_for_status()
@@ -181,26 +181,22 @@ def parse_page():
     pages = pages_elem[0].getText().split(',')[1].strip(' pages')
     info_list.append(pages)
 
-    tag_elem = soup.select('.actionLinkLite.bookPageGenreLink')
-
-    if tag_elem[0].getText() == 'Fiction' or tag_elem[0].getText() == 'Nonfiction':
-        category = tag_elem[0].getText().strip()
-        genre = tag_elem[2].getText().strip()
-
+    if SHELVES_LIST[0] == 'Fiction' or SHELVES_LIST[0] == 'Nonfiction':
+        category = SHELVES_LIST[0]
+        genre = SHELVES_LIST[1]
     else:
-        genre = tag_elem[0].getText().strip()
+        genre = SHELVES_LIST[0]
+        if 'Fiction' in SHELVES_LIST:
+            category = 'Fiction'
+        else:
+            category = 'Nonfiction'
 
-        for i in range(0, len(tag_elem) + 1):
-            if tag_elem[i].getText() == 'Fiction' or tag_elem[i].getText() == 'Nonfiction':
-                category = tag_elem[i].getText()
-                break
-    
     info_list.append(category)
     info_list.append(genre)
+
     return info_list
 
 
-# Write information into sheets
 def input_info(sheet_name):
     """Write the book information to the first blank row on the given sheet."""
     sheet = WB.get_sheet_by_name(sheet_name)
@@ -233,12 +229,13 @@ MONTH_CONV = {'01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May',
               '11': 'Nov', '12': 'Dec'}
 
 print('Opening a computer controlled browser window and updating Goodreads...')
-browser = webdriver.Firefox()
+BROWSER = webdriver.Firefox()
 
 URL = goodreads_find()
 SHELVES_LIST = goodreads_update()
-browser.close()
+BROWSER.close()
 print('Goodreads account updated.')
+
 
 WB = openpyxl.load_workbook(PATH)
 print('Updating Spreadsheet...')
@@ -253,6 +250,5 @@ print('Spreadsheet has been updated.')
 print('Booktracker has completed updating both the website and the spreadsheet'
       ' and will now close.')
 
-# TODO Rewrite BS4 TAG system as Type and Genre can be found from the list 'Shelves'
 # TODO Rewrite title / series using seperate getText's
-# TODO Make constants and variables naming uniform and PEP8 compliant
+# TODO Replace time.sleep's with Selenium waits
