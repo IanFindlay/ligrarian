@@ -64,21 +64,16 @@ def goodreads_find():
     pass_elem = BROWSER.find_element_by_name('user[password]')
     pass_elem.send_keys(PASSWORD)
     pass_elem.send_keys(Keys.ENTER)
-    time.sleep(5)
 
     # Find correct book and edition
     search_terms = sys.argv[1]
     search_elem = BROWSER.find_element_by_class_name('searchBox__input')
     search_elem.send_keys(search_terms + '%3Dauthor')
     search_elem.send_keys(Keys.ENTER)
-    time.sleep(3)
 
-    title_elem = BROWSER.find_element_by_class_name('bookTitle')
-    title_elem.click()
-    time.sleep(3)
+    BROWSER.find_element_by_class_name('bookTitle').click()
 
-    editions_elem = BROWSER.find_element_by_class_name('otherEditionsLink')
-    editions_elem.click()
+    BROWSER.find_element_by_class_name('otherEditionsLink').click()
 
     # Format
     book_format = sys.argv[2].lower()
@@ -86,10 +81,9 @@ def goodreads_find():
     filter_elem.click()
     filter_elem.send_keys(book_format)
     filter_elem.send_keys(Keys.ENTER)
-    time.sleep(3)
+    time.sleep(2)
 
-    book_elem = BROWSER.find_element_by_class_name('bookTitle')
-    book_elem.click()
+    BROWSER.find_element_by_class_name('bookTitle').click()
 
     return BROWSER.current_url
 
@@ -98,6 +92,7 @@ MONTH_CONV = {'01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May',
               '06': 'June', '07': 'July', '08': 'Aug', '09': 'Sep', '10': 'Oct',
               '11': 'Nov', '12': 'Dec'}
 
+
 def goodreads_update():
     """Update Goodreads by marking book as read and adding information."""
     # Mark as Read
@@ -105,13 +100,11 @@ def goodreads_update():
     menu_elem.click()
     time.sleep(1)
     menu_elem.send_keys(Keys.TAB, Keys.TAB, Keys.TAB, Keys.ENTER)
-    time.sleep(3)
 
     # Date Selection
     year_elem = BROWSER.find_element_by_class_name('endedAtYear.readingSession'
                                                    'DatePicker.smallPicker')
     year_elem.click()
-    time.sleep(1)
     year_elem.send_keys('2', Keys.ENTER)
 
     month_elem = BROWSER.find_element_by_class_name('endedAtMonth.largePicker'
@@ -228,6 +221,7 @@ DATE_READ = get_date()
 
 print('Opening a computer controlled browser window and updating Goodreads...')
 BROWSER = webdriver.Firefox()
+BROWSER.implicitly_wait(5)
 
 URL = goodreads_find()
 SHELVES_LIST = goodreads_update()
@@ -247,5 +241,3 @@ WB.save(PATH)
 print('Spreadsheet has been updated.')
 print('Booktracker has completed updating both the website and the spreadsheet'
       ' and will now close.')
-
-# TODO Replace time.sleep's with Selenium waits
