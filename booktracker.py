@@ -52,12 +52,6 @@ def get_date():
 
     return date
 
-DATE_READ = get_date()
-
-MONTH_CONV = {'01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May',
-              '06': 'June', '07': 'July', '08': 'Aug', '09': 'Sep', '10': 'Oct',
-              '11': 'Nov', '12': 'Dec'}
-
 
 def goodreads_find():
     """Find the correct book, in the correct format, on Goodreads."""
@@ -106,7 +100,7 @@ def goodreads_update():
     menu_elem.click()
     time.sleep(1)
     menu_elem.send_keys(Keys.TAB, Keys.TAB, Keys.TAB, Keys.ENTER)
-    time.sleep(2)
+    time.sleep(3)
 
     # Date Selection
     year_elem = browser.find_element_by_class_name('endedAtYear.readingSession'
@@ -142,8 +136,8 @@ def goodreads_update():
     time.sleep(1)
     shelf_search_elem = browser.find_element_by_class_name('wtrShelfSearchField')
 
-    for i, shelf in enumerate(shelves):
-        shelf_search_elem.send_keys(shelf, Keys.ENTER)
+    for i in range(len(shelves)):
+        shelf_search_elem.send_keys(shelves[i], Keys.ENTER)
         shelf_search_elem.send_keys(Keys.SHIFT, Keys.HOME, Keys.DELETE)
 
     menu_elem.click()
@@ -158,59 +152,53 @@ def goodreads_update():
 
     return shelves
 
-with open('/home/finners/Documents/Coding/Python/Booktracker/config') as f:
-    INFO = f.readlines()
-    USERNAME = INFO[0].strip()
-    PASSWORD = INFO[1].strip()
-    PATH = INFO[2].strip()
 
-print('Updating Goodreads account...')
-browser = webdriver.Firefox()
+def parse_page():
+    """Parse page information needed for updating the spreadsheet."""
+    info_list = []
+    res = requests.get(URL)
+    res.raise_for_status()
+    soup = bs4.BeautifulSoup(res.text, 'html.parser')
 
-URL = goodreads_find()
-SHELVES_LIST = goodreads_update()
-browser.close()
-print('Goodreads account updated.')
+    title_elem = soup.select('#bookTitle')
 
-# BS4 Parsing
-RES = requests.get(URL)
-RES.raise_for_status()
-SOUP = bs4.BeautifulSoup(RES.text, 'html.parser')
+    series_elem = soup.select('#bookTitle > .greyText')
+    if series_elem != []:
+        series = series_elem[0].getText().strip()
+        book_title = title_elem[0].getText().strip().strip(series).strip()
+        title = book_title + ' ' + series
+    else:
+        title = title_elem[0].getText().strip()
 
-TITLE_ELEM = SOUP.select('#bookTitle')
+    print(title)
+    info_list.append(title)
 
-SERIES_ELEM = SOUP.select('#bookTitle > .greyText')
-if SERIES_ELEM != []:
-    SERIES = SERIES_ELEM[0].getText().strip()
-    BOOK_TITLE = TITLE_ELEM[0].getText().strip().strip(SERIES).strip()
-    TITLE = BOOK_TITLE + ' ' + SERIES
-else:
-    TITLE = TITLE_ELEM[0].getText().strip()
+    author_elem = soup.select('.authorName')
+    author = author_elem[0].getText().strip()
+    info_list.append(author)
 
-print(TITLE)
+    pages_elem = soup.select('#details .row')
+    pages = pages_elem[0].getText().split(',')[1].strip(' pages')
+    info_list.append(pages)
 
-AUTHOR_ELEM = SOUP.select('.authorName')
-AUTHOR = AUTHOR_ELEM[0].getText().strip()
+    tag_elem = soup.select('.actionLinkLite.bookPageGenreLink')
 
-PAGES_ELEM = SOUP.select('#details .row')
-PAGES = PAGES_ELEM[0].getText().split(',')[1].strip(' pages')
+    if tag_elem[0].getText() == 'Fiction' or tag_elem[0].getText() == 'Nonfiction':
+        category = tag_elem[0].getText().strip()
+        genre = tag_elem[2].getText().strip()
 
-TAG_ELEM = SOUP.select('.actionLinkLite.bookPageGenreLink')
+    else:
+        genre = tag_elem[0].getText().strip()
 
-if TAG_ELEM[0].getText() == 'Fiction' or TAG_ELEM[0].getText() == 'Nonfiction':
-    TYPE = TAG_ELEM[0].getText().strip()
-    GENRE = TAG_ELEM[2].getText().strip()
+        for i in range(0, len(tag_elem) + 1):
+            if tag_elem[i].getText() == 'Fiction' or tag_elem[i].getText() == 'Nonfiction':
+                category = tag_elem[i].getText()
+                break
+    
+    info_list.append(category)
+    info_list.append(genre)
+    return info_list
 
-else:
-    GENRE = TAG_ELEM[0].getText().strip()
-
-    for i in range(0, len(TAG_ELEM) + 1):
-        if TAG_ELEM[i].getText() == 'Fiction' or TAG_ELEM[i].getText() == 'Nonfiction':
-            TYPE = TAG_ELEM[i].getText()
-            break
-
-WB = openpyxl.load_workbook(PATH)
-print('Updating Spreadsheet...')
 
 # Write information into sheets
 def input_info(sheet_name):
@@ -224,13 +212,37 @@ def input_info(sheet_name):
 
     input_row -= 1
 
-    sheet.cell(row=input_row, column=1).value = TITLE
-    sheet.cell(row=input_row, column=2).value = AUTHOR
-    sheet.cell(row=input_row, column=3).value = int(PAGES)
-    sheet.cell(row=input_row, column=4).value = TYPE
-    sheet.cell(row=input_row, column=5).value = GENRE
+    sheet.cell(row=input_row, column=1).value = INFO[0]        # Title
+    sheet.cell(row=input_row, column=2).value = INFO[1]        # Author
+    sheet.cell(row=input_row, column=3).value = int(INFO[2])   # Pages
+    sheet.cell(row=input_row, column=4).value = INFO[3]        # Category
+    sheet.cell(row=input_row, column=5).value = INFO[4]        # Genre
     sheet.cell(row=input_row, column=6).value = DATE_READ
 
+
+with open('/home/finners/Documents/Coding/Python/Booktracker/config') as f:
+    INFO = f.readlines()
+    USERNAME = INFO[0].strip()
+    PASSWORD = INFO[1].strip()
+    PATH = INFO[2].strip()
+
+DATE_READ = get_date()
+
+MONTH_CONV = {'01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May',
+              '06': 'June', '07': 'July', '08': 'Aug', '09': 'Sep', '10': 'Oct',
+              '11': 'Nov', '12': 'Dec'}
+
+print('Opening a computer controlled browser window and updating Goodreads...')
+browser = webdriver.Firefox()
+
+URL = goodreads_find()
+SHELVES_LIST = goodreads_update()
+browser.close()
+print('Goodreads account updated.')
+
+WB = openpyxl.load_workbook(PATH)
+print('Updating Spreadsheet...')
+INFO = parse_page()
 
 input_info('20' + DATE_READ[-2:])
 input_info('Overall')
@@ -238,8 +250,9 @@ input_info('Overall')
 WB.save(PATH)
 
 print('Spreadsheet has been updated.')
+print('Booktracker has completed updating both the website and the spreadsheet'
+      ' and will now close.')
 
-# TODO Organise code better with functions
 # TODO Rewrite BS4 TAG system as Type and Genre can be found from the list 'Shelves'
 # TODO Rewrite title / series using seperate getText's
 # TODO Make constants and variables naming uniform and PEP8 compliant
