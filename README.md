@@ -1,6 +1,6 @@
 # Booktracker
-Booktracker takes three obligatory sys arguments: [Book Title Author Name] [Format]-('h'ardback | 'k'indle | 'p'aperback) [Star Rating]  
-and a fourth optional argument: [Date Read]-(which defaults to today's date but can be set to 'y'esterday or a 'c'ustom date) and:
+Takes three obligatory sys arguments: [Book Title Author Name] [Format]-('h'ardback | 'k'indle | 'p'aperback) [Star Rating]  
+and a fourth optional argument: [Date Read]-(defaults to today's date but can be set to 'y'esterday or 'c'ustom) and:
 
   * Automatically updates your [Goodreads](https://www.goodreads.com/) account by doing the following:  
 
@@ -11,10 +11,9 @@ and a fourth optional argument: [Date Read]-(which defaults to today's date but 
 
   * Automtically updates a spreadsheet with the following info derived from the book's Goodreads page:
 
-    * **Book Title**  
-    * **Series Name and Book # in Series (if applicable)**  
+    * **Book Title with Series Name and Book # in Series (if applicable)**  
     * **Author**  
     * **Number of Pages**  
     * **Category (Fiction or Nonfiction)**  
-    * **Primary Genre**  
+    * **Genre**  
     * This information, alongside **Date Finished** is added to both this year's sheet and an overall sheet.
