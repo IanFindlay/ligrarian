@@ -13,13 +13,6 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
 
-with open('/home/finners/Documents/Coding/Python/Booktracker/config') as f:
-    INFO = f.readlines()
-    USERNAME = INFO[0].strip()
-    PASSWORD = INFO[1].strip()
-    PATH = INFO[2].strip()
-
-# Determine the date (DD/MM/YY) to write as book finished
 def get_date():
     """Return the date the book was read formatted (DD/MM/YY)."""
     today = datetime.datetime.now()
@@ -63,13 +56,11 @@ DATE_READ = get_date()
 
 MONTH_CONV = {'01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May',
               '06': 'June', '07': 'July', '08': 'Aug', '09': 'Sep', '10': 'Oct',
-               '11': 'Nov', '12': 'Dec'}
+              '11': 'Nov', '12': 'Dec'}
 
-# Selenium starts
-def goodreads_update():
-    """Update Goodreads by marking book as read and filling in information."""
-    print('Updating Goodreads...')
-    browser = webdriver.Firefox()
+
+def goodreads_find():
+    """Find the correct book, in the correct format, on Goodreads."""
     browser.get('https://goodreads.com')
 
     # Login
@@ -82,7 +73,6 @@ def goodreads_update():
 
     # Find correct book and edition
     search_terms = sys.argv[1]
-    Search_list = search_terms.split()       # UNUSED???
     search_elem = browser.find_element_by_class_name('searchBox__input')
     search_elem.send_keys(search_terms + '%3Dauthor')
     search_elem.send_keys(Keys.ENTER)
@@ -106,6 +96,11 @@ def goodreads_update():
     book_elem = browser.find_element_by_class_name('bookTitle')
     book_elem.click()
 
+    return browser.current_url
+
+
+def goodreads_update():
+    """Update Goodreads by marking book as read and adding information."""
     # Mark as Read
     menu_elem = browser.find_element_by_class_name('wtrRight.wtrUp')
     menu_elem.click()
@@ -147,13 +142,13 @@ def goodreads_update():
     time.sleep(1)
     shelf_search_elem = browser.find_element_by_class_name('wtrShelfSearchField')
 
-    for i, item in enumerate(shelves):
-        shelf_search_elem.send_keys(shelves[i], Keys.ENTER)
+    for i, shelf in enumerate(shelves):
+        shelf_search_elem.send_keys(shelf, Keys.ENTER)
         shelf_search_elem.send_keys(Keys.SHIFT, Keys.HOME, Keys.DELETE)
-    
+
     menu_elem.click()
 
-        # Give star rating
+    # Give star rating
     rating = sys.argv[3]
     stars_elem = browser.find_elements_by_class_name('star.off')
     for stars in stars_elem:
@@ -161,17 +156,21 @@ def goodreads_update():
             stars.click()
             break
 
-    print('Goodreads updated.')
+    return shelves
 
-    shelves_and_url = []
-    shelves_and_url.append(shelves)
-    shelves_and_url.append(browser.current_url)
+with open('/home/finners/Documents/Coding/Python/Booktracker/config') as f:
+    INFO = f.readlines()
+    USERNAME = INFO[0].strip()
+    PASSWORD = INFO[1].strip()
+    PATH = INFO[2].strip()
 
-    return shelves_and_url
+print('Updating Goodreads account...')
+browser = webdriver.Firefox()
 
-GOODREADS_INFO = goodreads_update()
-URL = GOODREADS_INFO[1]
-SHELVES_LIST = GOODREADS_INFO[0]
+URL = goodreads_find()
+SHELVES_LIST = goodreads_update()
+browser.close()
+print('Goodreads account updated.')
 
 # BS4 Parsing
 RES = requests.get(URL)
