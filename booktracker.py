@@ -117,6 +117,9 @@ def goodreads_update():
         if ' users' not in shelf.text and shelf.text not in shelves:
             shelves.append(shelf.text)
 
+    if sys.argv[3] == '5':
+        shelves.append('5-star-books')
+
     menu_elem = driver.find_element_by_class_name('wtrRight.wtrDown')
     menu_elem.click()
     time.sleep(1)
@@ -135,8 +138,6 @@ def goodreads_update():
         if stars.text.strip() == '{} of 5 stars'.format(rating):
             stars.click()
             break
-
-    # TODO Add 5-star-books shelf to shelves if star rating is 5
 
     return shelves
 
@@ -202,7 +203,7 @@ def input_info(sheet_name):
 
 
 config = configparser.ConfigParser()
-config.read('/home/finners/Documents/Coding//Python/Booktracker/settings.ini')
+config.read('/home/finners/Documents/Programming/Python/Booktracker/settings.ini')
 username = config.get('User', 'Username')
 password = config.get('User', 'Password')
 path = config.get('Spreadsheet', 'Path')
