@@ -14,7 +14,6 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 
-
 def get_date():
     """Return the date the book was read formatted (DD/MM/YY)."""
     today = datetime.datetime.now()
@@ -66,11 +65,6 @@ def goodreads_find():
     return driver.current_url
 
 
-MONTH_CONV = {'01': 'Jan', '02': 'Feb', '03': 'Mar', '04': 'Apr', '05': 'May',
-              '06': 'June', '07': 'July', '08': 'Aug', '09': 'Sep', '10': 'Oct',
-              '11': 'Nov', '12': 'Dec'}
-
-
 def goodreads_update():
     """Update Goodreads by marking book as read and adding information."""
     # Mark as Read
@@ -78,32 +72,22 @@ def goodreads_update():
     menu_elem.click()
     time.sleep(1)
     menu_elem.send_keys(Keys.TAB, Keys.TAB, Keys.TAB, Keys.ENTER)
+    time.sleep(1)
 
     # Date Selection
-    # year_elem = driver.find_element_by_class_name('endedAtYear.readingSession'
-    #                                                'DatePicker.smallPicker')
-    # year_elem.click()
-    # year_elem.send_keys('2', Keys.ENTER)
+    year = '20' + date_finished[6:]
+    month = date_finished[3:5].lstrip('0')
+    day = date_finished[:2]
+
+    Select(driver.find_element_by_class_name('rereadDatePicker.smallPicker.endYear')
+          ).select_by_visible_text(year)
 
 
-    # # FIXME Original implementation doesn't work for double digit days and
-    # # FIXME the new code is limited to only setting it to today's date
-    # day_elem = driver.find_element_by_class_name('endedAtDay.readingSession'
-    #                                               'DatePicker.smallPicker')
-    # day_elem.click()
-    # day_elem.send_keys(str(date_finished[0:2]))
-    # time.sleep(1)
-    # day_elem.send_keys(Keys.ENTER)
+    Select(driver.find_element_by_class_name('rereadDatePicker.largePicker.endMonth')
+          ).select_by_value(month)
 
-
-    # month_elem = driver.find_element_by_class_name('endedAtMonth.largePicker'
-    #                                                 '.readingSessionDatePicker')
-    # month_elem.click()
-    # month_elem.send_keys(MONTH_CONV[date_finished[3:5]], Keys.ENTER)
-
-    # Set to today
-    today_elem = driver.find_element_by_class_name('endedAtSetTodayLink.gr-button')
-    today_elem.click()
+    Select(driver.find_element_by_class_name('rereadDatePicker.smallPicker.endDay')
+          ).select_by_visible_text(day)
 
     # Save review
     save_elem = driver.find_element_by_name('next')
