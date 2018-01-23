@@ -156,10 +156,10 @@ def parse_page():
         genre = shelves_list[1]
     else:
         genre = shelves_list[0]
-        if 'Fiction' in shelves_list:
-            category = 'Fiction'
-        else:
+        if 'Nonfiction' in shelves_list:
             category = 'Nonfiction'
+        else:
+            category = 'Fiction'
 
     info_list.append(category)
     info_list.append(genre)
