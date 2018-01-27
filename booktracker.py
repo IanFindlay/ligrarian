@@ -71,7 +71,9 @@ def goodreads_update():
     menu_elem = driver.find_element_by_class_name('wtrRight.wtrUp')
     menu_elem.click()
     time.sleep(1)
-    menu_elem.send_keys(Keys.TAB, Keys.TAB, Keys.TAB, Keys.ENTER)
+    search_elem = driver.find_element_by_class_name('wtrShelfSearchField')
+    search_elem.click()
+    search_elem.send_keys('read', Keys.ENTER)
     time.sleep(1)
 
     # Date Selection
@@ -202,7 +204,6 @@ url = goodreads_find()
 shelves_list = goodreads_update()
 driver.close()
 print('Goodreads account updated.')
-
 
 wb = openpyxl.load_workbook(path)
 print('Updating Spreadsheet...')
