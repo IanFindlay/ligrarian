@@ -116,6 +116,7 @@ def goodreads_update():
         shelf_search_elem.send_keys(Keys.SHIFT, Keys.HOME, Keys.DELETE)
 
     menu_elem.click()
+    time.sleep(1)
 
     # Give star rating
     rating = sys.argv[3]
@@ -171,7 +172,7 @@ def parse_page():
 
 def input_info(sheet_name):
     """Write the book information to the first blank row on the given sheet."""
-    sheet = wb.get_sheet_by_name(sheet_name)
+    sheet = wb[sheet_name]
     input_row = 1
     data = ''
     while data != None:
@@ -189,7 +190,7 @@ def input_info(sheet_name):
 
 
 config = configparser.ConfigParser()
-config.read('/home/finners/Documents/Programming/Python/Booktracker/settings.ini')
+config.read('settings.ini')
 username = config.get('User', 'Username')
 password = config.get('User', 'Password')
 path = config.get('Spreadsheet', 'Path')
