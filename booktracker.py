@@ -18,7 +18,7 @@ def get_date():
     """Return the date the book was read formatted (DD/MM/YY)."""
     today = datetime.datetime.now()
 
-    if len(sys.argv) == 4:
+    if sys.argv[4].lower() == 'd':
         date = today.strftime('%d/%m/%y')
 
     elif sys.argv[4].lower() == 'y':
@@ -79,7 +79,7 @@ def goodreads_update():
     # Date Selection
     year = '20' + date_finished[6:]
     month = date_finished[3:5].lstrip('0')
-    day = date_finished[:2]
+    day = date_finished[:2].lstrip('0')
 
     Select(driver.find_element_by_class_name('rereadDatePicker.smallPicker.endYear')
           ).select_by_visible_text(year)
@@ -106,6 +106,7 @@ def goodreads_update():
     if sys.argv[3] == '5':
         shelves.append('5-star-books')
 
+    time.sleep(1)
     menu_elem = driver.find_element_by_class_name('wtrRight.wtrDown')
     menu_elem.click()
     time.sleep(1)
@@ -150,8 +151,8 @@ def parse_page():
     author = author_elem[0].getText().strip()
     info_list.append(author)
 
-    pages_elem = soup.select('#details .row')
-    pages = pages_elem[0].getText().split(',')[1].strip(' pages')
+    pages_elem = soup.findAll('span', attrs={'itemprop' : 'numberOfPages'})
+    pages = int(pages_elem[0].getText().strip(' pages'))
     info_list.append(pages)
 
     if shelves_list[0] == 'Fiction' or shelves_list[0] == 'Nonfiction':
@@ -183,7 +184,7 @@ def input_info(sheet_name):
 
     sheet.cell(row=input_row, column=1).value = info[0]        # Title
     sheet.cell(row=input_row, column=2).value = info[1]        # Author
-    sheet.cell(row=input_row, column=3).value = int(info[2])   # Pages
+    sheet.cell(row=input_row, column=3).value = info[2]        # Pages
     sheet.cell(row=input_row, column=4).value = info[3]        # Category
     sheet.cell(row=input_row, column=5).value = info[4]        # Genre
     sheet.cell(row=input_row, column=6).value = date_finished
