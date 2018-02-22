@@ -195,6 +195,15 @@ config.read('settings.ini')
 username = config.get('User', 'Username')
 password = config.get('User', 'Password')
 
+if username == "" or password == "":
+    username = input('Enter your Username here: ')
+    password = input('Enter your Password here: ')
+
+    with open('settings.ini', 'w') as f:
+        f.write('[User]\n')
+        f.write('Username = ' + username + '\n')
+        f.write('Password = ' + password + '\n')
+
 if len(sys.argv) < 4:
     print()
     print(
