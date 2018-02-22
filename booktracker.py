@@ -18,7 +18,7 @@ def get_date():
     """Return the date the book was read formatted (DD/MM/YY)."""
     today = datetime.datetime.now()
 
-    if sys.argv[4].lower() == 'd':
+    if sys.argv[4].lower() == 't':
         date = today.strftime('%d/%m/%y')
 
     elif sys.argv[4].lower() == 'y':
@@ -194,28 +194,39 @@ config = configparser.ConfigParser()
 config.read('settings.ini')
 username = config.get('User', 'Username')
 password = config.get('User', 'Password')
-path = config.get('Spreadsheet', 'Path')
 
-date_finished = get_date()
+if len(sys.argv) < 4:
+    print()
+    print(
+"""Booktracker requires 4 command line arguments seperated by spaces:
+          
+    Book Title Author Name' - Written between single or double quotes as shown
+    Format - First letter of the format e.g. k for Kindle or p for Paperback
+    Star Rating - A number between 1 and 5
+    Date Read - Either the letter t (today), y (yesterday) or c (custom)
+""")
 
-print('Opening a computer controlled browser window and updating Goodreads...')
-driver = webdriver.Firefox()
-driver.implicitly_wait(5)
+else:
+    date_finished = get_date()
 
-url = goodreads_find()
-shelves_list = goodreads_update()
-driver.close()
-print('Goodreads account updated.')
+    print('Opening a computer controlled browser window and updating Goodreads...')
+    driver = webdriver.Firefox()
+    driver.implicitly_wait(5)
 
-wb = openpyxl.load_workbook(path)
-print('Updating Spreadsheet...')
-info = parse_page()
+    url = goodreads_find()
+    shelves_list = goodreads_update()
+    driver.close()
+    print('Goodreads account updated.')
 
-input_info('20' + date_finished[-2:])
-input_info('Overall')
+    wb = openpyxl.load_workbook('Booktracker.xlsx')
+    print('Updating Spreadsheet...')
+    info = parse_page()
 
-wb.save(path)
+    input_info('20' + date_finished[-2:])
+    input_info('Overall')
 
-print('Spreadsheet has been updated.')
-print('Booktracker has completed updating both the website and the spreadsheet'
-      ' and will now close.')
+    wb.save('Booktracker.xlsx')
+
+    print('Spreadsheet has been updated.')
+    print('Booktracker has completed updating both the website and the spreadsheet'
+        ' and will now close.')
