@@ -3,6 +3,7 @@
 """Automatically updates Books Read spreadsheet and Goodreads account."""
 
 import configparser
+import tkinter as tk
 import sys
 import time
 import datetime
@@ -14,18 +15,80 @@ from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 
+
+def gui_input():
+    """Load GUI interface and process inputted data."""
+
+    def parse_input(book_title, author_name, book_format, rating, date_read):
+        """Take information inputted into the GUI and modify book_info list."""
+        book_info.extend((book_title, author_name, book_format, rating, date_read[0]))
+        root.quit()
+
+    root = tk.Tk()
+
+    width = 300
+    height = 190
+    geometry_string = "{}x{}".format(width, height)
+    root.geometry(geometry_string)
+
+    root.title("Booktracker")
+
+    title_label = tk.Label(root, text="Book Title".ljust(20))
+    title_label.grid(row=1, column=1, sticky='W')
+
+    author_label = tk.Label(root, text="Author Name")
+    author_label.grid(row=2, column=1, sticky='W')
+
+    format_label = tk.Label(root, text="Format")
+    format_label.grid(row=3, column=1, sticky='W')
+
+    rating_label = tk.Label(root, text="Rating")
+    rating_label.grid(row=4, column=1, sticky='W')
+
+    date_label = tk.Label(root, text="Date Read")
+    date_label.grid(row=5, column=1, sticky='W')
+
+    title = tk.Entry(root)
+    title.grid(row=1, column=2, sticky='W', pady=5)
+
+    author = tk.Entry(root)
+    author.grid(row=2, column=2, sticky='w', pady=5)
+
+    formats = ("Ebook", "Kindle", "Paperback", "Hardback")
+    book_format = tk.StringVar()
+    format_drop = tk.OptionMenu(root, book_format, *formats)
+    format_drop.grid(row=3, column=2, sticky='w')
+
+    stars = ("1", "2", "3", "4", "5")
+    star = tk.StringVar()
+    rating = tk.OptionMenu(root, star, *stars)
+    rating.grid(row=4, column=2, sticky='w')
+
+    dates = ("Today", "Yesterday", "Custom")
+    date = tk.StringVar()
+    date_read = tk.OptionMenu(root, date, *dates)
+    date_read.grid(row=5, column=2, sticky='w')
+
+    submit_button = tk.Button(root, text="Submit",
+                              command=lambda: parse_input(title.get(), author.get(), 
+                              book_format.get(), star.get(), date.get()))
+    submit_button.grid(row=6, column=2, sticky='e')
+
+    root.mainloop()
+
+
 def get_date():
     """Return the date the book was read formatted (DD/MM/YY)."""
     today = datetime.datetime.now()
 
-    if sys.argv[4].lower() == 't':
+    if book_info[4].lower() == 't':
         date = today.strftime('%d/%m/%y')
 
-    elif sys.argv[4].lower() == 'y':
+    elif book_info[4].lower() == 'y':
         yesterday = today - timedelta(days=1)
         date = yesterday.strftime('%d/%m/%y')
 
-    elif sys.argv[4].lower() == 'c':
+    else:
         date = input('Enter the date the book was finished (DD/MM/YY): ')
 
     return date
@@ -43,9 +106,10 @@ def goodreads_find():
     pass_elem.send_keys(Keys.ENTER)
 
     # Find correct book and edition
-    search_terms = sys.argv[1]
+    book_title = book_info[0]
+    book_author = book_info[1]
     search_elem = driver.find_element_by_class_name('searchBox__input')
-    search_elem.send_keys(search_terms + '%3Dauthor')
+    search_elem.send_keys(book_title + ' ' + book_author + '%3Dauthor')
     search_elem.send_keys(Keys.ENTER)
 
     driver.find_element_by_class_name('bookTitle').click()
@@ -53,7 +117,7 @@ def goodreads_find():
     driver.find_element_by_class_name('otherEditionsLink').click()
 
     # Format
-    book_format = sys.argv[2].lower()
+    book_format = book_info[2].lower()
     filter_elem = driver.find_element_by_name('filter_by_format')
     filter_elem.click()
     filter_elem.send_keys(book_format)
@@ -103,7 +167,7 @@ def goodreads_update():
         if ' users' not in shelf.text and shelf.text not in shelves:
             shelves.append(shelf.text)
 
-    if sys.argv[3] == '5':
+    if book_info[3] == '5':
         shelves.append('5-star-books')
 
     time.sleep(1)
@@ -120,7 +184,7 @@ def goodreads_update():
     time.sleep(1)
 
     # Give star rating
-    rating = sys.argv[3]
+    rating = book_info[3]
     stars_elem = driver.find_elements_by_class_name('star.off')
     for stars in stars_elem:
         if stars.text.strip() == '{} of 5 stars'.format(rating):
@@ -204,38 +268,32 @@ if username == "" or password == "":
         f.write('Username = ' + username + '\n')
         f.write('Password = ' + password + '\n')
 
-if len(sys.argv) < 4:
-    print()
-    print(
-"""Booktracker requires 4 command line arguments seperated by spaces:
-          
-    Book Title Author Name' - Written between single or double quotes as shown
-    Format - First letter of the format e.g. k for Kindle or p for Paperback
-    Star Rating - A number between 1 and 5
-    Date Read - Either the letter t (today), y (yesterday) or c (custom)
-""")
-
+book_info = []
+if len(sys.argv) == 6:
+    book_info = sys.argv[1:]
 else:
-    date_finished = get_date()
+    gui_input()
 
-    print('Opening a computer controlled browser window and updating Goodreads...')
-    driver = webdriver.Firefox()
-    driver.implicitly_wait(5)
+date_finished = get_date()
 
-    url = goodreads_find()
-    shelves_list = goodreads_update()
-    driver.close()
-    print('Goodreads account updated.')
+print('Opening a computer controlled browser window and updating Goodreads...')
+driver = webdriver.Firefox()
+driver.implicitly_wait(5)
 
-    wb = openpyxl.load_workbook('Booktracker.xlsx')
-    print('Updating Spreadsheet...')
-    info = parse_page()
+url = goodreads_find()
+shelves_list = goodreads_update()
+driver.close()
+print('Goodreads account updated.')
 
-    input_info('20' + date_finished[-2:])
-    input_info('Overall')
+wb = openpyxl.load_workbook('Booktracker.xlsx')
+print('Updating Spreadsheet...')
+info = parse_page()
 
-    wb.save('Booktracker.xlsx')
+input_info('20' + date_finished[-2:])
+input_info('Overall')
 
-    print('Spreadsheet has been updated.')
-    print('Booktracker has completed updating both the website and the spreadsheet'
-        ' and will now close.')
+wb.save('Booktracker.xlsx')
+
+
+print('Booktracker has completed updating both the website and the spreadsheet'
+    ' and will now close.')
