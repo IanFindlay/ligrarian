@@ -22,7 +22,7 @@ def gui_input():
     def parse_input(book_title, author_name, book_format, rating, date_read):
         """Take information inputted into the GUI and modify book_info list."""
         book_info.extend((book_title, author_name, book_format, rating, date_read[0]))
-        root.quit()
+        root.destroy()
 
     root = tk.Tk()
 
