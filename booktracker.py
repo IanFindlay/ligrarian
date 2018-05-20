@@ -262,11 +262,12 @@ password = config.get('User', 'Password')
 if username == "" or password == "":
     username = input('Enter your Username here: ')
     password = input('Enter your Password here: ')
-
-    with open('settings.ini', 'w') as f:
-        f.write('[User]\n')
-        f.write('Username = ' + username + '\n')
-        f.write('Password = ' + password + '\n')
+    save = input("Would you like to save this information for future use?(y/n): ")
+    if save.lower() == 'y':
+        with open('settings.ini', 'w') as f:
+            f.write('[User]\n')
+            f.write('Username = ' + username + '\n')
+            f.write('Password = ' + password + '\n')
 
 book_info = []
 if len(sys.argv) == 6:
