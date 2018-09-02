@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
-"""Automatically updates Books Read spreadsheet and Goodreads account."""
+"""Automatically update Goodreads and Spreadsheet with book read info."""
 
 import configparser
-import tkinter as tk
-import sys
-import time
 import datetime
 from datetime import timedelta
-import requests
-import openpyxl
+import time
+import tkinter as tk
+import sys
+
 import bs4
+import openpyxl
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
@@ -19,15 +20,16 @@ from selenium.webdriver.support.ui import Select
 def gui_input():
     """Load GUI interface and process inputted data."""
 
-    def parse_input(book_title, author_name, book_format, rating, date_read):
+    def parse_input(title, author, book_format, rating, date_read, review):
         """Take information inputted into the GUI and modify book_info list."""
-        book_info.extend((book_title, author_name, book_format, rating, date_read[0]))
+        book_info.extend((title, author, book_format,
+                          rating, date_read[0], review))
         root.destroy()
 
     root = tk.Tk()
 
-    width = 300
-    height = 190
+    width = 680
+    height = 470
     geometry_string = "{}x{}".format(width, height)
     root.geometry(geometry_string)
 
@@ -47,6 +49,9 @@ def gui_input():
 
     date_label = tk.Label(root, text="Date Read")
     date_label.grid(row=5, column=1, sticky='W')
+
+    review_label = tk.Label(root, text="Review (optional)")
+    review_label.grid(row=6, column=1, sticky='W')
 
     title = tk.Entry(root)
     title.grid(row=1, column=2, sticky='W', pady=5)
@@ -69,15 +74,19 @@ def gui_input():
     date_read = tk.OptionMenu(root, date, *dates)
     date_read.grid(row=5, column=2, sticky='w')
 
-    submit_button = tk.Button(root, text="Submit",
-                              command=lambda: parse_input(title.get(), author.get(), 
-                              book_format.get(), star.get(), date.get()))
-    submit_button.grid(row=6, column=2, sticky='e')
+    review = tk.Text(root, height=15, width=75, wrap=tk.WORD)
+    review.grid(row=6, column=2, sticky='e', pady=5)
+
+    button_com = lambda: parse_input(title.get(), author.get(),
+                                     book_format.get(), star.get(),
+                                     date.get(), review.get('1.0', 'end-1c'))
+    submit_button = tk.Button(root, text="Mark as Read", command=button_com)
+    submit_button.grid(row=12, column=2, sticky='e', pady=20)
 
     root.mainloop()
 
 
-def get_date():
+def get_date(book_info):
     """Return the date the book was read formatted (DD/MM/YY)."""
     today = datetime.datetime.now()
 
@@ -94,7 +103,7 @@ def get_date():
     return date
 
 
-def goodreads_find():
+def goodreads_find(book_info):
     """Find the correct book, in the correct format, on Goodreads."""
     driver.get('https://goodreads.com')
 
@@ -129,7 +138,7 @@ def goodreads_find():
     return driver.current_url
 
 
-def goodreads_update():
+def goodreads_update(book_info):
     """Update Goodreads by marking book as read and adding information."""
     # Mark as Read
     menu_elem = driver.find_element_by_class_name('wtrRight.wtrUp')
@@ -145,17 +154,26 @@ def goodreads_update():
     month = date_finished[3:5].lstrip('0')
     day = date_finished[:2].lstrip('0')
 
-    Select(driver.find_element_by_class_name('rereadDatePicker.smallPicker.endYear')
-          ).select_by_visible_text(year)
+    year_class = 'rereadDatePicker.smallPicker.endYear'
+    month_class = 'rereadDatePicker.largePicker.endMonth'
+    day_class = 'rereadDatePicker.smallPicker.endDay'
+    Select(driver.find_element_by_class_name(year_class)
+           ).select_by_visible_text(year)
 
+    Select(driver.find_element_by_class_name(month_class)
+           ).select_by_value(month)
 
-    Select(driver.find_element_by_class_name('rereadDatePicker.largePicker.endMonth')
-          ).select_by_value(month)
+    Select(driver.find_element_by_class_name(day_class)
+           ).select_by_visible_text(day)
 
-    Select(driver.find_element_by_class_name('rereadDatePicker.smallPicker.endDay')
-          ).select_by_visible_text(day)
+    # Write review if one entered
+    review = book_info[5]
+    if review:
+        review_elem = driver.find_element_by_name('review[review]')
+        review_elem.click()
+        review_elem.send_keys(review)
 
-    # Save review
+    # Save
     save_elem = driver.find_element_by_name('next')
     save_elem.click()
 
@@ -174,11 +192,11 @@ def goodreads_update():
     menu_elem = driver.find_element_by_class_name('wtrRight.wtrDown')
     menu_elem.click()
     time.sleep(1)
-    shelf_search_elem = driver.find_element_by_class_name('wtrShelfSearchField')
+    shelf_elem = driver.find_element_by_class_name('wtrShelfSearchField')
 
     for i in range(len(shelves)):
-        shelf_search_elem.send_keys(shelves[i], Keys.ENTER)
-        shelf_search_elem.send_keys(Keys.SHIFT, Keys.HOME, Keys.DELETE)
+        shelf_elem.send_keys(shelves[i], Keys.ENTER)
+        shelf_elem.send_keys(Keys.SHIFT, Keys.HOME, Keys.DELETE)
 
     menu_elem.click()
     time.sleep(1)
@@ -195,7 +213,7 @@ def goodreads_update():
 
 
 def parse_page():
-    """Parse and return page information needed for updating the spreadsheet."""
+    """Parse and return page information needed for spreadsheet."""
     info_list = []
     res = requests.get(url)
     res.raise_for_status()
@@ -215,7 +233,7 @@ def parse_page():
     author = author_elem[0].getText().strip()
     info_list.append(author)
 
-    pages_elem = soup.findAll('span', attrs={'itemprop' : 'numberOfPages'})
+    pages_elem = soup.findAll('span', attrs={'itemprop': 'numberOfPages'})
     pages = int(pages_elem[0].getText().strip(' pages'))
     info_list.append(pages)
 
@@ -240,7 +258,7 @@ def input_info(sheet_name):
     sheet = wb[sheet_name]
     input_row = 1
     data = ''
-    while data != None:
+    while data is not None:
         data = sheet.cell(row=input_row, column=1).value
         input_row += 1
 
@@ -254,47 +272,47 @@ def input_info(sheet_name):
     sheet.cell(row=input_row, column=6).value = date_finished
 
 
-config = configparser.ConfigParser()
-config.read('settings.ini')
-username = config.get('User', 'Username')
-password = config.get('User', 'Password')
+if __name__ == '__main__':
 
-if username == "" or password == "":
-    username = input('Enter your Username here: ')
-    password = input('Enter your Password here: ')
-    save = input("Would you like to save this information for future use?(y/n): ")
-    if save.lower() == 'y':
-        with open('settings.ini', 'w') as f:
-            f.write('[User]\n')
-            f.write('Username = ' + username + '\n')
-            f.write('Password = ' + password + '\n')
+    config = configparser.ConfigParser()
+    config.read('settings.ini')
+    username = config.get('User', 'Username')
+    password = config.get('User', 'Password')
 
-book_info = []
-if len(sys.argv) == 6:
-    book_info = sys.argv[1:]
-else:
-    gui_input()
+    if username == "" or password == "":
+        username = input('Enter your Username here: ')
+        password = input('Enter your Password here: ')
+        save = input("Save this information for future use?(y/n): ")
+        if save.lower() == 'y':
+            with open('settings.ini', 'w') as f:
+                f.write('[User]\n')
+                f.write('Username = ' + username + '\n')
+                f.write('Password = ' + password + '\n')
 
-date_finished = get_date()
+    book_info = []
+    if len(sys.argv) == 6:
+        book_info = sys.argv[1:]
+    else:
+        gui_input()
 
-print('Opening a computer controlled browser window and updating Goodreads...')
-driver = webdriver.Firefox()
-driver.implicitly_wait(5)
+    date_finished = get_date(book_info)
 
-url = goodreads_find()
-shelves_list = goodreads_update()
-driver.close()
-print('Goodreads account updated.')
+    print('Opening a computer controlled browser and updating Goodreads...')
+    driver = webdriver.Firefox()
+    driver.implicitly_wait(5)
 
-wb = openpyxl.load_workbook('Booktracker.xlsx')
-print('Updating Spreadsheet...')
-info = parse_page()
+    url = goodreads_find(book_info)
+    shelves_list = goodreads_update(book_info)
+    driver.close()
+    print('Goodreads account updated.')
 
-input_info('20' + date_finished[-2:])
-input_info('Overall')
+    wb = openpyxl.load_workbook('Booktracker.xlsx')
+    print('Updating Spreadsheet...')
+    info = parse_page()
 
-wb.save('Booktracker.xlsx')
+    input_info('20' + date_finished[-2:])
+    input_info('Overall')
 
+    wb.save('Booktracker.xlsx')
 
-print('Booktracker has completed updating both the website and the spreadsheet'
-    ' and will now close.')
+    print('Booktracker has completed and will now close.')
