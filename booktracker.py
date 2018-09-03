@@ -253,16 +253,15 @@ def parse_page():
     return info_list
 
 
-def input_info(sheet_name):
+def input_info(sheet_name, info):
     """Write the book information to the first blank row on the given sheet."""
-    sheet = wb[sheet_name]
-    input_row = 1
-    data = ''
-    while data is not None:
-        data = sheet.cell(row=input_row, column=1).value
-        input_row += 1
+    sheet_names = wb.sheetnames
+    if sheet_name not in sheet_names:
+        create_sheet(sheet_name, sheet_names[-1])
 
-    input_row -= 1
+    sheet = wb[sheet_name]
+
+    input_row = first_blank(sheet)
 
     sheet.cell(row=input_row, column=1).value = info[0]        # Title
     sheet.cell(row=input_row, column=2).value = info[1]        # Author
@@ -270,6 +269,30 @@ def input_info(sheet_name):
     sheet.cell(row=input_row, column=4).value = info[3]        # Category
     sheet.cell(row=input_row, column=5).value = info[4]        # Genre
     sheet.cell(row=input_row, column=6).value = date_finished
+
+
+def first_blank(sheet):
+    """Return the first blank row of the given sheet."""
+    input_row = 1
+    data = ''
+    while data is not None:
+        data = sheet.cell(row=input_row, column=1).value
+        input_row += 1
+    input_row -= 1
+    return input_row
+
+
+def create_sheet(sheet_name, last_sheet):
+    """Create a new sheet by copying and modifying the last one."""
+    sheet = wb.copy_worksheet(wb[last_sheet])
+    sheet.title = sheet_name
+    last_row = first_blank(sheet)
+    while last_row > 1:
+        for col in range(1, 7):
+            sheet.cell(row=last_row, column=col).value = None
+        last_row -= 1
+    day_tracker = '=(TODAY()-DATE({},1,1))/7'.format(sheet_name)
+    sheet.cell(row=5, column=9).value = day_tracker
 
 
 if __name__ == '__main__':
@@ -310,8 +333,8 @@ if __name__ == '__main__':
     print('Updating Spreadsheet...')
     info = parse_page()
 
-    input_info('20' + date_finished[-2:])
-    input_info('Overall')
+    input_info('20' + date_finished[-2:], info)
+    input_info('Overall', info)
 
     wb.save('Booktracker.xlsx')
 
