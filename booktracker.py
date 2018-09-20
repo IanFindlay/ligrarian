@@ -22,7 +22,7 @@ def gui_input():
 
     def parse_input(title, author, book_format, rating, date_read, review):
         """Take information inputted into the GUI and modify book_info list."""
-        book_info.extend((title, author, book_format,
+        info_in.extend((title, author, book_format,
                           rating, date_read[0], review))
         root.destroy()
 
@@ -90,10 +90,10 @@ def get_date(book_info):
     """Return the date the book was read formatted (DD/MM/YY)."""
     today = datetime.datetime.now()
 
-    if book_info[4].lower() == 't':
+    if book_info['date'].lower() == 't':
         date = today.strftime('%d/%m/%y')
 
-    elif book_info[4].lower() == 'y':
+    elif book_info['date'].lower() == 'y':
         yesterday = today - timedelta(days=1)
         date = yesterday.strftime('%d/%m/%y')
 
@@ -103,7 +103,7 @@ def get_date(book_info):
     return date
 
 
-def goodreads_find(book_info):
+def goodreads_find(book_info, username, password):
     """Find the correct book, in the correct format, on Goodreads."""
     driver.get('https://goodreads.com')
 
@@ -115,8 +115,8 @@ def goodreads_find(book_info):
     pass_elem.send_keys(Keys.ENTER)
 
     # Find correct book and edition
-    book_title = book_info[0]
-    book_author = book_info[1]
+    book_title = book_info['title']
+    book_author = book_info['author']
     search_elem = driver.find_element_by_class_name('searchBox__input')
     search_elem.send_keys(book_title + ' ' + book_author + '%3Dauthor')
     search_elem.send_keys(Keys.ENTER)
@@ -126,7 +126,7 @@ def goodreads_find(book_info):
     driver.find_element_by_class_name('otherEditionsLink').click()
 
     # Format
-    book_format = book_info[2].lower()
+    book_format = book_info['format'].lower()
     filter_elem = driver.find_element_by_name('filter_by_format')
     filter_elem.click()
     filter_elem.send_keys(book_format)
@@ -167,11 +167,10 @@ def goodreads_update(book_info):
            ).select_by_visible_text(day)
 
     # Write review if one entered
-    review = book_info[5]
-    if review:
+    if book_info['review']:
         review_elem = driver.find_element_by_name('review[review]')
         review_elem.click()
-        review_elem.send_keys(review)
+        review_elem.send_keys(book_info['review'])
 
     # Save
     save_elem = driver.find_element_by_name('next')
@@ -185,7 +184,7 @@ def goodreads_update(book_info):
         if ' users' not in shelf.text and shelf.text not in shelves:
             shelves.append(shelf.text)
 
-    if book_info[3] == '5':
+    if book_info['rating'] == '5':
         shelves.append('5-star-books')
 
     time.sleep(1)
@@ -202,7 +201,7 @@ def goodreads_update(book_info):
     time.sleep(1)
 
     # Give star rating
-    rating = book_info[3]
+    rating = book_info['rating']
     stars_elem = driver.find_elements_by_class_name('star.off')
     for stars in stars_elem:
         if stars.text.strip() == '{} of 5 stars'.format(rating):
@@ -212,9 +211,9 @@ def goodreads_update(book_info):
     return shelves
 
 
-def parse_page():
+def parse_page(url):
     """Parse and return page information needed for spreadsheet."""
-    info_list = []
+    info = {}
     res = requests.get(url)
     res.raise_for_status()
     soup = bs4.BeautifulSoup(res.text, 'html.parser')
@@ -227,15 +226,15 @@ def parse_page():
     else:
         title = rough_title[0].strip() + ' ' + rough_title[2].strip()
 
-    info_list.append(title)
+    info['title'] = title
 
     author_elem = soup.select('.authorName')
     author = author_elem[0].getText().strip()
-    info_list.append(author)
+    info['author'] = author
 
     pages_elem = soup.findAll('span', attrs={'itemprop': 'numberOfPages'})
     pages = int(pages_elem[0].getText().strip(' pages'))
-    info_list.append(pages)
+    info['pages'] = pages
 
     if shelves_list[0] == 'Fiction' or shelves_list[0] == 'Nonfiction':
         category = shelves_list[0]
@@ -247,10 +246,10 @@ def parse_page():
         else:
             category = 'Fiction'
 
-    info_list.append(category)
-    info_list.append(genre)
+    info['category'] = category
+    info['genre'] = genre
 
-    return info_list
+    return info
 
 
 def input_info(sheet_name, info):
@@ -263,11 +262,11 @@ def input_info(sheet_name, info):
 
     input_row = first_blank(sheet)
 
-    sheet.cell(row=input_row, column=1).value = info[0]        # Title
-    sheet.cell(row=input_row, column=2).value = info[1]        # Author
-    sheet.cell(row=input_row, column=3).value = info[2]        # Pages
-    sheet.cell(row=input_row, column=4).value = info[3]        # Category
-    sheet.cell(row=input_row, column=5).value = info[4]        # Genre
+    sheet.cell(row=input_row, column=1).value = info['title']
+    sheet.cell(row=input_row, column=2).value = info['author']
+    sheet.cell(row=input_row, column=3).value = info['pages']
+    sheet.cell(row=input_row, column=4).value = info['category']
+    sheet.cell(row=input_row, column=5).value = info['genre']
     sheet.cell(row=input_row, column=6).value = date_finished
 
 
@@ -295,8 +294,8 @@ def create_sheet(sheet_name, last_sheet):
     sheet.cell(row=5, column=9).value = day_tracker
 
 
-if __name__ == '__main__':
-
+def user_info():
+    """Retrieve user info from config file if present or prompt for info."""
     config = configparser.ConfigParser()
     config.read('settings.ini')
     username = config.get('User', 'Username')
@@ -312,26 +311,38 @@ if __name__ == '__main__':
                 f.write('Username = ' + username + '\n')
                 f.write('Password = ' + password + '\n')
 
-    book_info = []
+    return (username, password)
+
+
+if __name__ == '__main__':
+
+    username, password = user_info()
+
     if len(sys.argv) == 6:
-        book_info = sys.argv[1:]
+        info_in = sys.argv[1:]
     else:
+        inputted = []
         gui_input()
+
+    book_info = {
+        'title': info_in[0], 'author': info_in[1], 'format': info_in[2],
+        'rating': info_in[3], 'date': info_in[4], 'review': info_in[5],
+        }
 
     date_finished = get_date(book_info)
 
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
-    driver.implicitly_wait(5)
+    driver.implicitly_wait(10)
 
-    url = goodreads_find(book_info)
+    url = goodreads_find(book_info, username, password)
     shelves_list = goodreads_update(book_info)
     driver.close()
     print('Goodreads account updated.')
 
     wb = openpyxl.load_workbook('Booktracker.xlsx')
     print('Updating Spreadsheet...')
-    info = parse_page()
+    info = parse_page(url)
 
     input_info('20' + date_finished[-2:], info)
     input_info('Overall', info)
