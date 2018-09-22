@@ -102,10 +102,10 @@ def get_date(date_read):
     """Return the date the book was read formatted (DD/MM/YY)."""
     today = datetime.datetime.now()
 
-    if date_read == 'Today':
+    if date_read in ('t', 'T', 'Today'):
         date = today.strftime('%d/%m/%y')
 
-    elif date_read == 'Yesterday':
+    elif date_read in ('y', 'Y', 'Yesterday'):
         yesterday = today - timedelta(days=1)
         date = yesterday.strftime('%d/%m/%y')
 
@@ -115,7 +115,7 @@ def get_date(date_read):
     return date
 
 
-def goodreads_find(title, author, book_format, username, password):
+def goodreads_find(username, password, title, author, book_format):
     """Find the correct book, in the correct format, on Goodreads."""
     driver.get('https://goodreads.com')
 
@@ -147,7 +147,7 @@ def goodreads_find(title, author, book_format, username, password):
     return driver.current_url
 
 
-def goodreads_update(review, rating):
+def goodreads_update(date_done, review, rating):
     """Update Goodreads by marking book as read and adding information."""
     # Mark as Read
     menu_elem = driver.find_element_by_class_name('wtrRight.wtrUp')
@@ -159,9 +159,9 @@ def goodreads_update(review, rating):
     time.sleep(1)
 
     # Date Selection
-    year = '20' + date_finished[6:]
-    month = date_finished[3:5].lstrip('0')
-    day = date_finished[:2].lstrip('0')
+    year = '20' + date_done[6:]
+    month = date_done[3:5].lstrip('0')
+    day = date_done[:2].lstrip('0')
 
     year_class = 'rereadDatePicker.smallPicker.endYear'
     month_class = 'rereadDatePicker.largePicker.endMonth'
@@ -260,11 +260,11 @@ def parse_page(url):
     return info
 
 
-def input_info(sheet_name, title, author, pages, category, genre, date_read):
+def input_info(sheet_name, title, author, pages, category, genre, date_done):
     """Write the book information to the first blank row on the given sheet."""
     sheet_names = wb.sheetnames
     if sheet_name not in sheet_names:
-        create_sheet(sheet_name, sheet_names[-1])
+        create_sheet(sheet_names[-1], sheet_name)
 
     sheet = wb[sheet_name]
 
@@ -275,7 +275,7 @@ def input_info(sheet_name, title, author, pages, category, genre, date_read):
     sheet.cell(row=input_row, column=3).value = pages
     sheet.cell(row=input_row, column=4).value = category
     sheet.cell(row=input_row, column=5).value = genre
-    sheet.cell(row=input_row, column=6).value = date_read
+    sheet.cell(row=input_row, column=6).value = date_done
 
 
 def first_blank(sheet):
@@ -289,7 +289,7 @@ def first_blank(sheet):
     return input_row
 
 
-def create_sheet(sheet_name, last_sheet):
+def create_sheet(last_sheet, sheet_name):
     """Create a new sheet by copying and modifying the last one."""
     sheet = wb.copy_worksheet(wb[last_sheet])
     sheet.title = sheet_name
@@ -329,7 +329,7 @@ if __name__ == '__main__':
     if len(sys.argv) == 6:
         book_info = {
         'title': sys.argv[1], 'author': sys.argv[2], 'format': sys.argv[3],
-        'rating': sys.argv[4], 'date': sys.argv[5],
+        'rating': sys.argv[4], 'date': sys.argv[5], 'review': '',
         }
     else:
         book_info = {}
@@ -337,16 +337,17 @@ if __name__ == '__main__':
         gui = GuiInput(root)
         root.mainloop()
 
-    date_finished = get_date(book_info['date'])
+    date_done = get_date(book_info['date'])
 
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
     driver.implicitly_wait(10)
 
-    url = goodreads_find(book_info['title'], book_info['author'],
-                         book_info['format'], username, password)
+    url = goodreads_find(username, password, book_info['title'],
+                         book_info['author'], book_info['format'])
 
-    shelves_list = goodreads_update(book_info['review'], book_info['rating'])
+    shelves_list = goodreads_update(date_done, book_info['review'],
+                                    book_info['rating'])
     driver.close()
     print('Goodreads account updated.')
 
@@ -354,11 +355,11 @@ if __name__ == '__main__':
     print('Updating Spreadsheet...')
     info = parse_page(url)
 
-    input_info('20' + date_finished[-2:], info['title'], info['author'],
-               info['pages'], info['category'], info['genre'], date_finished)
+    input_info('20' + date_done[-2:], info['title'], info['author'],
+               info['pages'], info['category'], info['genre'], date_done)
 
     input_info('Overall', info['title'], info['author'], info['pages'],
-               info['category'], info['genre'], date_finished)
+               info['category'], info['genre'], date_done)
 
     wb.save('Booktracker.xlsx')
 
