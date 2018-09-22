@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-"""Automatically update Goodreads and Spreadsheet with book read info."""
+"""Automatically update Goodreads and local Spreadsheet with book read info."""
 
 import configparser
 import datetime
 from datetime import timedelta
 import time
 import tkinter as tk
+import tkinter.messagebox
 import sys
 
 import bs4
@@ -17,83 +18,95 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 
 
-def gui_input():
-    """Load GUI interface and process inputted data."""
+class GuiInput:
+    """Booktracker GUI structure and related methods."""
 
-    def parse_input(title, author, book_format, rating, date_read, review):
-        """Take information inputted into the GUI and modify book_info list."""
-        info_in.extend((title, author, book_format,
-                          rating, date_read[0], review))
-        root.destroy()
+    def __init__(self, master):
+        self.master = master
+        master.title("Booktracker")
+        width = 680
+        height = 470
+        geometry_string = "{}x{}".format(width, height)
+        root.geometry(geometry_string)
 
-    root = tk.Tk()
+        self.title_label = tk.Label(root, text="Book Title".ljust(20))
+        self.title_label.grid(row=1, column=1, sticky='W')
 
-    width = 680
-    height = 470
-    geometry_string = "{}x{}".format(width, height)
-    root.geometry(geometry_string)
+        self.author_label = tk.Label(root, text="Author Name")
+        self.author_label.grid(row=2, column=1, sticky='W')
 
-    root.title("Booktracker")
+        self.format_label = tk.Label(root, text="Format")
+        self.format_label.grid(row=3, column=1, sticky='W')
 
-    title_label = tk.Label(root, text="Book Title".ljust(20))
-    title_label.grid(row=1, column=1, sticky='W')
+        self.rating_label = tk.Label(root, text="Rating")
+        self.rating_label.grid(row=4, column=1, sticky='W')
 
-    author_label = tk.Label(root, text="Author Name")
-    author_label.grid(row=2, column=1, sticky='W')
+        self.date_label = tk.Label(root, text="Date Read")
+        self.date_label.grid(row=5, column=1, sticky='W')
 
-    format_label = tk.Label(root, text="Format")
-    format_label.grid(row=3, column=1, sticky='W')
+        self.review_label = tk.Label(root, text="Review (optional)")
+        self.review_label.grid(row=6, column=1, sticky='W')
 
-    rating_label = tk.Label(root, text="Rating")
-    rating_label.grid(row=4, column=1, sticky='W')
+        self.title = tk.Entry(root)
+        self.title.grid(row=1, column=2, sticky='W', pady=5)
 
-    date_label = tk.Label(root, text="Date Read")
-    date_label.grid(row=5, column=1, sticky='W')
+        self.author = tk.Entry(root)
+        self.author.grid(row=2, column=2, sticky='w', pady=5)
 
-    review_label = tk.Label(root, text="Review (optional)")
-    review_label.grid(row=6, column=1, sticky='W')
+        formats = ("Ebook", "Hardback", "Kindle", "Paperback",)
+        self.book_format = tk.StringVar()
+        format_drop = tk.OptionMenu(root, self.book_format, *formats)
+        format_drop.grid(row=3, column=2, sticky='w')
 
-    title = tk.Entry(root)
-    title.grid(row=1, column=2, sticky='W', pady=5)
+        stars = ("1", "2", "3", "4", "5")
+        self.star = tk.StringVar()
+        rating = tk.OptionMenu(root, self.star, *stars)
+        rating.grid(row=4, column=2, sticky='w')
 
-    author = tk.Entry(root)
-    author.grid(row=2, column=2, sticky='w', pady=5)
+        dates = ("Today", "Yesterday", "Custom")
+        self.date = tk.StringVar()
+        date_read = tk.OptionMenu(root, self.date, *dates)
+        date_read.grid(row=5, column=2, sticky='w')
 
-    formats = ("Ebook", "Kindle", "Paperback", "Hardback")
-    book_format = tk.StringVar()
-    format_drop = tk.OptionMenu(root, book_format, *formats)
-    format_drop.grid(row=3, column=2, sticky='w')
+        self.review = tk.Text(root, height=15, width=75, wrap=tk.WORD)
+        self.review.grid(row=6, column=2, sticky='e', pady=5)
 
-    stars = ("1", "2", "3", "4", "5")
-    star = tk.StringVar()
-    rating = tk.OptionMenu(root, star, *stars)
-    rating.grid(row=4, column=2, sticky='w')
+        submit_button = tk.Button(root, text="Mark as Read",
+                                  command=self.parse_input)
+        submit_button.grid(row=12, column=2, sticky='e', pady=20)
 
-    dates = ("Today", "Yesterday", "Custom")
-    date = tk.StringVar()
-    date_read = tk.OptionMenu(root, date, *dates)
-    date_read.grid(row=5, column=2, sticky='w')
 
-    review = tk.Text(root, height=15, width=75, wrap=tk.WORD)
-    review.grid(row=6, column=2, sticky='e', pady=5)
+    def parse_input(self):
+        """Create and verify the book details inputted to the GUI."""
+        book_info['title'] = self.title.get()
+        book_info['author'] = self.author.get()
+        book_info['format'] = self.book_format.get()
+        book_info['rating'] = self.star.get()
+        book_info['date'] = self.date.get()
+        book_info['review'] = self.review.get('1.0', 'end-1c')
 
-    button_com = lambda: parse_input(title.get(), author.get(),
-                                     book_format.get(), star.get(),
-                                     date.get(), review.get('1.0', 'end-1c'))
-    submit_button = tk.Button(root, text="Mark as Read", command=button_com)
-    submit_button.grid(row=12, column=2, sticky='e', pady=20)
+        try:
+            assert book_info['title'] != ''
+            assert book_info['author'] != ''
+            assert book_info['format'] != ''
+            assert book_info['rating'] != ''
+            assert book_info['date'] != ''
+            print(book_info)
+            root.destroy()
 
-    root.mainloop()
+        except AssertionError:
+            tk.messagebox.showwarning(message="Complete all non-optional "
+                                          "fields before marking as read")
 
 
 def get_date(book_info):
     """Return the date the book was read formatted (DD/MM/YY)."""
     today = datetime.datetime.now()
 
-    if book_info['date'].lower() == 't':
+    if book_info['date'] == 'Today':
         date = today.strftime('%d/%m/%y')
 
-    elif book_info['date'].lower() == 'y':
+    elif book_info['date'] == 'Yesterday':
         yesterday = today - timedelta(days=1)
         date = yesterday.strftime('%d/%m/%y')
 
@@ -319,15 +332,15 @@ if __name__ == '__main__':
     username, password = user_info()
 
     if len(sys.argv) == 6:
-        info_in = sys.argv[1:]
-    else:
-        inputted = []
-        gui_input()
-
-    book_info = {
-        'title': info_in[0], 'author': info_in[1], 'format': info_in[2],
-        'rating': info_in[3], 'date': info_in[4], 'review': info_in[5],
+        book_info = {
+        'title': sys.argv[1], 'author': sys.argv[2], 'format': sys.argv[3],
+        'rating': sys.argv[4], 'date': sys.argv[5],
         }
+    else:
+        book_info = {}
+        root = tk.Tk()
+        gui = GuiInput(root)
+        root.mainloop()
 
     date_finished = get_date(book_info)
 
