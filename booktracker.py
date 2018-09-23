@@ -46,13 +46,13 @@ class GuiInput:
         self.review_label = tk.Label(root, text="Review (optional)", padx=10)
         self.review_label.grid(row=7, column=1, sticky='W')
 
-        self.title = tk.Entry(root)
+        self.title = tk.Entry(root, width=40)
         self.title.grid(row=2, column=2, sticky='W', pady=(25,5))
 
-        self.author = tk.Entry(root)
+        self.author = tk.Entry(root, width=40)
         self.author.grid(row=3, column=2, sticky='w', pady=5)
 
-        self.date = tk.Entry(root)
+        self.date = tk.Entry(root, width=8)
         self.date.insert(0, 'DD/MM/YY')
         self.date.grid(row=4, column=2, sticky='w', pady=5)
 
