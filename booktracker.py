@@ -3,8 +3,6 @@
 """Automatically update Goodreads and local Spreadsheet with book read info."""
 
 import configparser
-import datetime
-from datetime import timedelta
 import time
 import tkinter as tk
 import tkinter.messagebox
@@ -25,51 +23,53 @@ class GuiInput:
         self.master = master
         master.title("Booktracker")
         width = 680
-        height = 470
+        height = 500
         geometry_string = "{}x{}".format(width, height)
         root.geometry(geometry_string)
 
         self.title_label = tk.Label(root, text="Book Title".ljust(20))
-        self.title_label.grid(row=1, column=1, sticky='W')
+        self.title_label.grid(row=2, column=1, sticky='W',
+                              pady=(25,5), padx=10)
 
         self.author_label = tk.Label(root, text="Author Name")
-        self.author_label.grid(row=2, column=1, sticky='W')
-
-        self.format_label = tk.Label(root, text="Format")
-        self.format_label.grid(row=3, column=1, sticky='W')
-
-        self.rating_label = tk.Label(root, text="Rating")
-        self.rating_label.grid(row=4, column=1, sticky='W')
+        self.author_label.grid(row=3, column=1, sticky='W', padx=10)
 
         self.date_label = tk.Label(root, text="Date Read")
-        self.date_label.grid(row=5, column=1, sticky='W')
+        self.date_label.grid(row=4, column=1, sticky='W', padx=10)
 
-        self.review_label = tk.Label(root, text="Review (optional)")
-        self.review_label.grid(row=6, column=1, sticky='W')
+        self.format_label = tk.Label(root, text="Format")
+        self.format_label.grid(row=5, column=1, sticky='W', padx=10)
+
+        self.rating_label = tk.Label(root, text="Rating")
+        self.rating_label.grid(row=6, column=1, sticky='W', padx=10)
+
+        self.review_label = tk.Label(root, text="Review (optional)", padx=10)
+        self.review_label.grid(row=7, column=1, sticky='W')
 
         self.title = tk.Entry(root)
-        self.title.grid(row=1, column=2, sticky='W', pady=5)
+        self.title.grid(row=2, column=2, sticky='W', pady=(25,5))
 
         self.author = tk.Entry(root)
-        self.author.grid(row=2, column=2, sticky='w', pady=5)
+        self.author.grid(row=3, column=2, sticky='w', pady=5)
 
-        formats = ("Ebook", "Hardback", "Kindle", "Paperback",)
+        self.date = tk.Entry(root)
+        self.date.insert(0, 'DD/MM/YY')
+        self.date.grid(row=4, column=2, sticky='w', pady=5)
+
+        formats = ("Paperback", "Hardback", "Kindle", "Ebook",)
         self.book_format = tk.StringVar()
+        self.book_format.set('Kindle')
         format_drop = tk.OptionMenu(root, self.book_format, *formats)
-        format_drop.grid(row=3, column=2, sticky='w')
+        format_drop.grid(row=5, column=2, sticky='w', pady=5)
 
         stars = ("1", "2", "3", "4", "5")
         self.star = tk.StringVar()
+        self.star.set('3')
         rating = tk.OptionMenu(root, self.star, *stars)
-        rating.grid(row=4, column=2, sticky='w')
-
-        dates = ("Today", "Yesterday", "Custom")
-        self.date = tk.StringVar()
-        date_read = tk.OptionMenu(root, self.date, *dates)
-        date_read.grid(row=5, column=2, sticky='w')
+        rating.grid(row=6, column=2, sticky='w', pady=5)
 
         self.review = tk.Text(root, height=15, width=75, wrap=tk.WORD)
-        self.review.grid(row=6, column=2, sticky='e', pady=5)
+        self.review.grid(row=7, column=2, sticky='e', pady=5)
 
         submit_button = tk.Button(root, text="Mark as Read",
                                   command=self.parse_input)
@@ -98,33 +98,20 @@ class GuiInput:
                                           "fields before marking as read")
 
 
-def get_date(date_read):
-    """Return the date the book was read formatted (DD/MM/YY)."""
-    today = datetime.datetime.now()
 
-    if date_read in ('t', 'T', 'Today'):
-        date = today.strftime('%d/%m/%y')
-
-    elif date_read in ('y', 'Y', 'Yesterday'):
-        yesterday = today - timedelta(days=1)
-        date = yesterday.strftime('%d/%m/%y')
-
-    else:
-        date = input('Enter the date the book was finished (DD/MM/YY): ')
-
-    return date
-
-
-def goodreads_find(username, password, title, author, book_format):
-    """Find the correct book, in the correct format, on Goodreads."""
+def goodreads_login(driver, username, password):
+    """Login to Goodreads account from the homepage."""
     driver.get('https://goodreads.com')
 
-    # Login
     email_elem = driver.find_element_by_name('user[email]')
     email_elem.send_keys(username)
     pass_elem = driver.find_element_by_name('user[password]')
     pass_elem.send_keys(password)
     pass_elem.send_keys(Keys.ENTER)
+
+
+def goodreads_find(driver, title, author, book_format):
+    """Find the correct book, in the correct format, on Goodreads."""
 
     # Find correct book and edition
     search_elem = driver.find_element_by_class_name('searchBox__input')
@@ -147,7 +134,7 @@ def goodreads_find(username, password, title, author, book_format):
     return driver.current_url
 
 
-def goodreads_update(date_done, review, rating):
+def goodreads_update(driver, date_done, review, rating):
     """Update Goodreads by marking book as read and adding information."""
     # Mark as Read
     menu_elem = driver.find_element_by_class_name('wtrRight.wtrUp')
@@ -328,8 +315,8 @@ if __name__ == '__main__':
 
     if len(sys.argv) == 6:
         book_info = {
-        'title': sys.argv[1], 'author': sys.argv[2], 'format': sys.argv[3],
-        'rating': sys.argv[4], 'date': sys.argv[5], 'review': '',
+        'title': sys.argv[1], 'author': sys.argv[2], 'date': sys.argv[3],
+        'format': sys.argv[4], 'rating': sys.argv[5],  'review': None,
         }
     else:
         book_info = {}
@@ -337,17 +324,16 @@ if __name__ == '__main__':
         gui = GuiInput(root)
         root.mainloop()
 
-    date_done = get_date(book_info['date'])
-
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
-    driver.implicitly_wait(10)
+    driver.implicitly_wait(20)
 
-    url = goodreads_find(username, password, book_info['title'],
-                         book_info['author'], book_info['format'])
+    goodreads_login(driver, username, password)
+    url = goodreads_find(driver, book_info['title'], book_info['author'],
+                         book_info['format'])
 
-    shelves_list = goodreads_update(date_done, book_info['review'],
-                                    book_info['rating'])
+    shelves_list = goodreads_update(driver, book_info['date'],
+                                    book_info['review'], book_info['rating'])
     driver.close()
     print('Goodreads account updated.')
 
@@ -355,11 +341,13 @@ if __name__ == '__main__':
     print('Updating Spreadsheet...')
     info = parse_page(url)
 
-    input_info('20' + date_done[-2:], info['title'], info['author'],
-               info['pages'], info['category'], info['genre'], date_done)
+    year_sheet = '20' + book_info['date'][-2:]
+
+    input_info(year_sheet, info['title'], info['author'], info['pages'],
+               info['category'], info['genre'], book_info['date'])
 
     input_info('Overall', info['title'], info['author'], info['pages'],
-               info['category'], info['genre'], date_done)
+               info['category'], info['genre'], book_info['date'])
 
     wb.save('Booktracker.xlsx')
 
