@@ -3,7 +3,6 @@
 """Automatically update Goodreads and local Spreadsheet with book read info."""
 
 import configparser
-import time
 import tkinter as tk
 import tkinter.messagebox
 import sys
@@ -29,7 +28,7 @@ class GuiInput:
 
         self.title_label = tk.Label(root, text="Book Title".ljust(20))
         self.title_label.grid(row=2, column=1, sticky='W',
-                              pady=(25,5), padx=10)
+                              pady=(25, 5), padx=10)
 
         self.author_label = tk.Label(root, text="Author Name")
         self.author_label.grid(row=3, column=1, sticky='W', padx=10)
@@ -47,7 +46,7 @@ class GuiInput:
         self.review_label.grid(row=7, column=1, sticky='W')
 
         self.title = tk.Entry(root, width=40)
-        self.title.grid(row=2, column=2, sticky='W', pady=(25,5))
+        self.title.grid(row=2, column=2, sticky='W', pady=(25, 5))
 
         self.author = tk.Entry(root, width=40)
         self.author.grid(row=3, column=2, sticky='w', pady=5)
@@ -75,7 +74,6 @@ class GuiInput:
                                   command=self.parse_input)
         submit_button.grid(row=12, column=2, sticky='e', pady=20)
 
-
     def parse_input(self):
         """Create and verify the book details inputted to the GUI."""
         book_info['title'] = self.title.get()
@@ -95,8 +93,7 @@ class GuiInput:
 
         except AssertionError:
             tk.messagebox.showwarning(message="Complete all non-optional "
-                                          "fields before marking as read")
-
+                                      "fields before marking as read")
 
 
 def goodreads_login(driver, username, password):
@@ -117,19 +114,20 @@ def goodreads_find(driver, title, author, book_format):
     search_elem = driver.find_element_by_class_name('searchBox__input')
     search_elem.send_keys(title + ' ' + author + '%3Dauthor')
     search_elem.send_keys(Keys.ENTER)
+    edition_elem = driver.find_element_by_partial_link_text('edition')
+    edition_elem.click()
 
-    driver.find_element_by_class_name('bookTitle').click()
-
-    driver.find_element_by_class_name('otherEditionsLink').click()
-
-    # Format
+    # Filter by format
     filter_elem = driver.find_element_by_name('filter_by_format')
     filter_elem.click()
     filter_elem.send_keys(book_format)
     filter_elem.send_keys(Keys.ENTER)
-    time.sleep(2)
+    # Refresh to make sure filter page is loaded
+    driver.refresh()
 
-    driver.find_element_by_class_name('bookTitle').click()
+    # Select top book
+    title_elem = driver.find_element_by_class_name('bookTitle')
+    title_elem.click()
 
     return driver.current_url
 
@@ -139,11 +137,9 @@ def goodreads_update(driver, date_done, review, rating):
     # Mark as Read
     menu_elem = driver.find_element_by_class_name('wtrRight.wtrUp')
     menu_elem.click()
-    time.sleep(1)
     search_elem = driver.find_element_by_class_name('wtrShelfSearchField')
     search_elem.click()
     search_elem.send_keys('read', Keys.ENTER)
-    time.sleep(1)
 
     # Date Selection
     year = '20' + date_done[6:]
@@ -183,10 +179,11 @@ def goodreads_update(driver, date_done, review, rating):
     if rating == '5':
         shelves.append('5-star-books')
 
-    time.sleep(1)
+    # Refresh to ensure review box won't block elements
+    driver.refresh()
+
     menu_elem = driver.find_element_by_class_name('wtrRight.wtrDown')
     menu_elem.click()
-    time.sleep(1)
     shelf_elem = driver.find_element_by_class_name('wtrShelfSearchField')
 
     for i in range(len(shelves)):
@@ -194,7 +191,6 @@ def goodreads_update(driver, date_done, review, rating):
         shelf_elem.send_keys(Keys.SHIFT, Keys.HOME, Keys.DELETE)
 
     menu_elem.click()
-    time.sleep(1)
 
     # Give star rating
     stars_elem = driver.find_elements_by_class_name('star.off')
@@ -315,8 +311,8 @@ if __name__ == '__main__':
 
     if len(sys.argv) == 6:
         book_info = {
-        'title': sys.argv[1], 'author': sys.argv[2], 'date': sys.argv[3],
-        'format': sys.argv[4], 'rating': sys.argv[5],  'review': None,
+            'title': sys.argv[1], 'author': sys.argv[2], 'date': sys.argv[3],
+            'format': sys.argv[4], 'rating': sys.argv[5],  'review': None,
         }
     else:
         book_info = {}
