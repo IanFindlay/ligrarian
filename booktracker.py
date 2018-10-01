@@ -152,7 +152,7 @@ def goodreads_find(driver, title, author, book_format):
 def goodreads_update(driver, date_done, review, rating):
     """Update Goodreads by marking book as read and adding information."""
     # Mark as Read
-    menu_elem = driver.find_element_by_class_name('wtrRight.wtrDown')
+    menu_elem = driver.find_element_by_class_name('wtrShelfButton')
     menu_elem.click()
     search_elem = driver.find_element_by_class_name('wtrShelfSearchField')
     search_elem.click()
@@ -199,7 +199,7 @@ def goodreads_update(driver, date_done, review, rating):
     # Refresh to ensure review box won't block elements
     driver.refresh()
 
-    menu_elem = driver.find_element_by_class_name('wtrRight.wtrDown')
+    menu_elem = driver.find_element_by_class_name('wtrShelfButton')
     menu_elem.click()
     shelf_elem = driver.find_element_by_class_name('wtrShelfSearchField')
 
