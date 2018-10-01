@@ -317,6 +317,7 @@ if __name__ == '__main__':
     else:
         book_info = {}
         root = tk.Tk()
+        root.protocol("WM_DELETE_WINDOW", exit)
         gui = GuiInput(root)
         root.mainloop()
 
