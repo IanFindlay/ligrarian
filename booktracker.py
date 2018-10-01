@@ -11,6 +11,7 @@ import bs4
 import openpyxl
 import requests
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 
@@ -93,7 +94,7 @@ class GuiInput:
 
         except AssertionError:
             tk.messagebox.showwarning(message="Complete all non-optional "
-                                      "fields before marking as read")
+                                      "fields before marking as read.")
 
 
 def goodreads_login(driver, username, password):
@@ -106,6 +107,13 @@ def goodreads_login(driver, username, password):
     pass_elem.send_keys(password)
     pass_elem.send_keys(Keys.ENTER)
 
+    try:
+        driver.find_element_by_class_name('siteHeader__personal')
+    except NoSuchElementException:
+        print('Failed to login - Username and/or Password probably incorrect.')
+        driver.close()
+        exit()
+
 
 def goodreads_find(driver, title, author, book_format):
     """Find the correct book, in the correct format, on Goodreads."""
@@ -114,16 +122,25 @@ def goodreads_find(driver, title, author, book_format):
     search_elem = driver.find_element_by_class_name('searchBox__input')
     search_elem.send_keys(title + ' ' + author + '%3Dauthor')
     search_elem.send_keys(Keys.ENTER)
-    edition_elem = driver.find_element_by_partial_link_text('edition')
-    edition_elem.click()
+
+    try:
+        edition_elem = driver.find_element_by_partial_link_text('edition')
+        edition_elem.click()
+    except NoSuchElementException:
+        print("Failed to find book - Title or Author probably incorrect.")
+        driver.close()
+        exit()
 
     # Filter by format
     filter_elem = driver.find_element_by_name('filter_by_format')
     filter_elem.click()
     filter_elem.send_keys(book_format)
     filter_elem.send_keys(Keys.ENTER)
-    # Refresh to make sure filter page is loaded
-    driver.refresh()
+
+    # Make sure filter page is loaded before clicking top book
+    while True:
+        if 'filter_by_format' in driver.current_url:
+            break
 
     # Select top book
     title_elem = driver.find_element_by_class_name('bookTitle')
@@ -135,7 +152,7 @@ def goodreads_find(driver, title, author, book_format):
 def goodreads_update(driver, date_done, review, rating):
     """Update Goodreads by marking book as read and adding information."""
     # Mark as Read
-    menu_elem = driver.find_element_by_class_name('wtrRight.wtrUp')
+    menu_elem = driver.find_element_by_class_name('wtrRight.wtrDown')
     menu_elem.click()
     search_elem = driver.find_element_by_class_name('wtrShelfSearchField')
     search_elem.click()
@@ -190,7 +207,8 @@ def goodreads_update(driver, date_done, review, rating):
         shelf_elem.send_keys(shelves[i], Keys.ENTER)
         shelf_elem.send_keys(Keys.SHIFT, Keys.HOME, Keys.DELETE)
 
-    menu_elem.click()
+    # Refresh so dropdown won't block stars
+    driver.refresh()
 
     # Give star rating
     stars_elem = driver.find_elements_by_class_name('star.off')
