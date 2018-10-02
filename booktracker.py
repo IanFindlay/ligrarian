@@ -12,8 +12,11 @@ import openpyxl
 import requests
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 class GuiInput:
@@ -131,16 +134,18 @@ def goodreads_find(driver, title, author, book_format):
         driver.close()
         exit()
 
+    pre_filter_url = driver.current_url
+
     # Filter by format
     filter_elem = driver.find_element_by_name('filter_by_format')
     filter_elem.click()
     filter_elem.send_keys(book_format)
     filter_elem.send_keys(Keys.ENTER)
 
-    # Make sure filter page is loaded before clicking top book
-    while True:
-        if 'filter_by_format' in driver.current_url:
-            break
+    # Make sure filtered page is loaded before clicking top book
+    WebDriverWait(driver, 10).until(
+        EC.url_changes((pre_filter_url))
+    )
 
     # Select top book
     title_elem = driver.find_element_by_class_name('bookTitle')
@@ -196,8 +201,10 @@ def goodreads_update(driver, date_done, review, rating):
     if rating == '5':
         shelves.append('5-star-books')
 
-    # Refresh to ensure review box won't block elements
-    driver.refresh()
+    # Wait until review box is invisible
+    WebDriverWait(driver, 10).until(
+        EC.invisibility_of_element_located((By.ID, "box"))
+    )
 
     menu_elem = driver.find_element_by_class_name('wtrShelfButton')
     menu_elem.click()
@@ -207,8 +214,11 @@ def goodreads_update(driver, date_done, review, rating):
         shelf_elem.send_keys(shelves[i], Keys.ENTER)
         shelf_elem.send_keys(Keys.SHIFT, Keys.HOME, Keys.DELETE)
 
-    # Refresh so dropdown won't block stars
-    driver.refresh()
+    # Close dropdown and wait until it disappears
+    menu_elem.click()
+    WebDriverWait(driver, 10).until(
+        EC.invisibility_of_element_located((By.CLASS_NAME, "wtrShelfList"))
+    )
 
     # Give star rating
     stars_elem = driver.find_elements_by_class_name('star.off')
