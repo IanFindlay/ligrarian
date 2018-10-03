@@ -6,7 +6,7 @@ from datetime import datetime as dt
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
-import booktracker as main
+import ligrarian as main
 
 
 username, password = main.user_info()

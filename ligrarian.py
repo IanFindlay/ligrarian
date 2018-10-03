@@ -20,11 +20,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 
 class GuiInput:
-    """Booktracker GUI structure and related methods."""
+    """Ligrarian GUI structure and related methods."""
 
     def __init__(self, master):
         self.master = master
-        master.title("Booktracker")
+        master.title("Ligrarian")
         width = 680
         height = 500
         geometry_string = "{}x{}".format(width, height)
@@ -362,7 +362,7 @@ if __name__ == '__main__':
     driver.close()
     print('Goodreads account updated.')
 
-    wb = openpyxl.load_workbook('Booktracker.xlsx')
+    wb = openpyxl.load_workbook('Ligrarian.xlsx')
     print('Updating Spreadsheet...')
     info = parse_page(url)
 
@@ -374,6 +374,6 @@ if __name__ == '__main__':
     input_info('Overall', info['title'], info['author'], info['pages'],
                info['category'], info['genre'], book_info['date'])
 
-    wb.save('Booktracker.xlsx')
+    wb.save('Ligrarian.xlsx')
 
-    print('Booktracker has completed and will now close.')
+    print('Ligrarian has completed and will now close.')
