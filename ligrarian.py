@@ -127,12 +127,12 @@ class GuiInput:
                                       "fields before marking as read.")
 
 
-def goodreads_login(driver, username, password):
+def goodreads_login(driver, email, password):
     """Login to Goodreads account from the homepage."""
     driver.get('https://goodreads.com')
 
     email_elem = driver.find_element_by_name('user[email]')
-    email_elem.send_keys(username)
+    email_elem.send_keys(email)
     pass_elem = driver.find_element_by_name('user[password]')
     pass_elem.send_keys(password)
     pass_elem.send_keys(Keys.ENTER)
@@ -140,7 +140,7 @@ def goodreads_login(driver, username, password):
     try:
         driver.find_element_by_class_name('siteHeader__personal')
     except NoSuchElementException:
-        print('Failed to login - Username and/or Password probably incorrect.')
+        print('Failed to login - Email and/or Password probably incorrect.')
         driver.close()
         exit()
 
@@ -340,24 +340,43 @@ def create_sheet(last_sheet, sheet_name):
     sheet.cell(row=5, column=9).value = day_tracker
 
 
+def write_config(email, password, prompt):
+    """Write configuration file."""
+    with open('settings.ini', 'w') as f:
+        f.write('[User]\n')
+        f.write('Email = ' + email + '\n')
+        f.write('Password = ' + password + '\n')
+        f.write('\n')
+        f.write('[Settings]\n')
+        f.write('Prompt = ' + prompt)
+
+
 def user_info():
-    """Retrieve user info from config file if present or prompt for info."""
+    """Retrieve user info from config file or prompt for it if none saved."""
     config = configparser.ConfigParser()
     config.read('settings.ini')
-    username = config.get('User', 'Username')
+    email = config.get('User', 'Email')
     password = config.get('User', 'Password')
+    prompt = config.get('Settings', 'Prompt')
 
-    if username == "" or password == "":
-        username = input('Enter your Username here: ')
-        password = input('Enter your Password here: ')
-        save = input("Save this information for future use?(y/n): ")
+    if email == "":
+        email = input('Email: ')
+    if password == "":
+        password = input('Password: ')
+        if prompt == 'no':
+            return (email, password)
+
+        save = input("Save Password?(y/n): ")
         if save.lower() == 'y':
-            with open('settings.ini', 'w') as f:
-                f.write('[User]\n')
-                f.write('Username = ' + username + '\n')
-                f.write('Password = ' + password + '\n')
+            write_config(email, password, 'yes')
+        elif save.lower() == 'n':
+            disable = input("Disable save Password prompt?(y/n): ")
+            if disable.lower() == 'y':
+                write_config(email, "", 'no')
+            else:
+                write_config(email, "", 'yes')
 
-    return (username, password)
+    return (email, password)
 
 
 if __name__ == '__main__':
@@ -386,13 +405,13 @@ if __name__ == '__main__':
         gui = GuiInput(root)
         root.mainloop()
 
-    username, password = user_info()
+    email, password = user_info()
 
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
     driver.implicitly_wait(20)
 
-    goodreads_login(driver, username, password)
+    goodreads_login(driver, email, password)
     url = goodreads_find(driver, book_info['title'], book_info['author'],
                          book_info['format'])
 
