@@ -337,11 +337,14 @@ if __name__ == '__main__':
 
     username, password = user_info()
 
-    if len(sys.argv) == 6:
+    if len(sys.argv) in (6, 7):
         book_info = {
             'title': sys.argv[1], 'author': sys.argv[2], 'date': sys.argv[3],
             'format': sys.argv[4], 'rating': sys.argv[5],  'review': None,
         }
+        if len(sys.argv) == 7:
+            book_info['review'] = sys.argv[6]
+
     else:
         book_info = {}
         root = tk.Tk()
