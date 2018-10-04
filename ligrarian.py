@@ -3,6 +3,8 @@
 """Automatically update Goodreads and local Spreadsheet with book read info."""
 
 import configparser
+from datetime import datetime as dt
+from datetime import timedelta
 import tkinter as tk
 import tkinter.messagebox
 import sys
@@ -24,11 +26,11 @@ class GuiInput:
 
     def __init__(self, master):
         self.master = master
-        master.title("Ligrarian")
-        width = 680
-        height = 500
-        geometry_string = "{}x{}".format(width, height)
-        root.geometry(geometry_string)
+        self.master.title("Ligrarian")
+        self.width = 680
+        self.height = 515
+        self.geometry_string = "{}x{}".format(self.width, self.height)
+        root.geometry(self.geometry_string)
 
         self.title_label = tk.Label(root, text="Book Title".ljust(20))
         self.title_label.grid(row=2, column=1, sticky='W',
@@ -50,33 +52,58 @@ class GuiInput:
         self.review_label.grid(row=7, column=1, sticky='W')
 
         self.title = tk.Entry(root, width=40)
-        self.title.grid(row=2, column=2, sticky='W', pady=(25, 5))
+        self.title.grid(row=2, column=2, columnspan=15,
+                        sticky='W', pady=(25, 5))
 
         self.author = tk.Entry(root, width=40)
-        self.author.grid(row=3, column=2, sticky='w', pady=5)
+        self.author.grid(row=3, column=2, columnspan=15, sticky='w', pady=5)
 
         self.date = tk.Entry(root, width=8)
         self.date.insert(0, 'DD/MM/YY')
-        self.date.grid(row=4, column=2, sticky='w', pady=5)
+        self.date.grid(row=4, column=2, sticky='w', pady=10, ipady=3)
+
+        self.today_button = tk.Button(root, text="Today",
+                                      command=self.set_today)
+
+        self.today_button.grid(row=4, column=3, sticky='w', pady=10)
+
+        self.yesterday_button = tk.Button(root, text="Yesterday",
+                                          command=self.set_yesterday)
+        self.yesterday_button.grid(row=4, column=4, sticky='w', pady=10)
 
         formats = ("Paperback", "Hardback", "Kindle", "Ebook",)
         self.book_format = tk.StringVar()
         self.book_format.set('Kindle')
-        format_drop = tk.OptionMenu(root, self.book_format, *formats)
-        format_drop.grid(row=5, column=2, sticky='w', pady=5)
+        self.format_drop = tk.OptionMenu(root, self.book_format, *formats)
+        self.format_drop.grid(row=5, column=2, columnspan=2,
+                              sticky='w', pady=5)
 
         stars = ("1", "2", "3", "4", "5")
         self.star = tk.StringVar()
         self.star.set('3')
-        rating = tk.OptionMenu(root, self.star, *stars)
-        rating.grid(row=6, column=2, sticky='w', pady=5)
+        self.rating = tk.OptionMenu(root, self.star, *stars)
+        self.rating.grid(row=6, column=2, sticky='w', pady=5)
 
         self.review = tk.Text(root, height=15, width=75, wrap=tk.WORD)
-        self.review.grid(row=7, column=2, sticky='e', pady=5)
+        self.review.grid(row=7, column=2, columnspan=15, sticky='e', pady=5)
 
-        submit_button = tk.Button(root, text="Mark as Read",
-                                  command=self.parse_input)
-        submit_button.grid(row=12, column=2, sticky='e', pady=20)
+        self.submit_button = tk.Button(root, text="Mark as Read",
+                                       command=self.parse_input)
+        self.submit_button.grid(row=12, column=16, sticky='e', pady=20)
+
+    def set_today(self):
+        """Insert today's date into date Entry field."""
+        self.date.delete(0, 8)
+        self.date.insert(0, today)
+        self.yesterday_button.config(relief='raised')
+        self.today_button.config(relief='sunken')
+
+    def set_yesterday(self):
+        """Insert yesterday's date into date Entry field."""
+        self.date.delete(0, 8)
+        self.date.insert(0, yesterday)
+        self.today_button.config(relief='raised')
+        self.yesterday_button.config(relief='sunken')
 
     def parse_input(self):
         """Create and verify the book details inputted to the GUI."""
@@ -92,7 +119,7 @@ class GuiInput:
             assert book_info['author'] != ''
             assert book_info['format'] != ''
             assert book_info['rating'] != ''
-            assert book_info['date'] != ''
+            assert book_info['date'] != 'DD/MM/YY'
             root.destroy()
 
         except AssertionError:
@@ -335,7 +362,8 @@ def user_info():
 
 if __name__ == '__main__':
 
-    username, password = user_info()
+    today = dt.strftime(dt.now(), '%d/%m/%y')
+    yesterday = dt.strftime(dt.now() - timedelta(1), '%d/%m/%y')
 
     if len(sys.argv) in (6, 7):
         book_info = {
@@ -345,12 +373,20 @@ if __name__ == '__main__':
         if len(sys.argv) == 7:
             book_info['review'] = sys.argv[6]
 
+        # Process date if given as (t)oday or (y)esterday into proper format
+        if book_info['date'].lower() == 't':
+            book_info['date'] = today
+        elif book_info['date'].lower() == 'y':
+            book_info['date'] = yesterday
+
     else:
         book_info = {}
         root = tk.Tk()
         root.protocol("WM_DELETE_WINDOW", exit)
         gui = GuiInput(root)
         root.mainloop()
+
+    username, password = user_info()
 
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
