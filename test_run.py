@@ -8,8 +8,7 @@ from selenium.webdriver.common.keys import Keys
 
 import ligrarian as main
 
-
-username, password = main.user_info()
+username, password = main.retrieve_user()
 today = dt.strftime(dt.now(), '%d/%m/%y')
 book_info = {
     'title': 'Cannery Row', 'author': 'John Steinbeck', 'date': today,
