@@ -27,86 +27,120 @@ class GuiInput:
     def __init__(self, master):
         self.master = master
         self.master.title("Ligrarian")
-        self.width = 680
-        self.height = 515
+        self.width = 665
+        self.height = 560
         self.geometry_string = "{}x{}".format(self.width, self.height)
         root.geometry(self.geometry_string)
 
-        self.title_label = tk.Label(root, text="Book Title".ljust(20))
-        self.title_label.grid(row=2, column=1, sticky='W',
-                              pady=(25, 5), padx=10)
+        # Labels
+        self.login_label = tk.Label(root, text="Login")
+        self.login_label.grid(row=2, column=1, sticky='W',
+                              pady=(30, 5), padx=10)
 
-        self.author_label = tk.Label(root, text="Author Name")
-        self.author_label.grid(row=3, column=1, sticky='W', padx=10)
+        self.title_label = tk.Label(root, text="Title")
+        self.title_label.grid(row=3, column=1, sticky='W', padx=10)
 
-        self.date_label = tk.Label(root, text="Date Read")
-        self.date_label.grid(row=4, column=1, sticky='W', padx=10)
+        self.author_label = tk.Label(root, text="Author")
+        self.author_label.grid(row=4, column=1, sticky='W', padx=10)
+
+        self.date_label = tk.Label(root, text="Date")
+        self.date_label.grid(row=5, column=1, sticky='W', padx=10)
 
         self.format_label = tk.Label(root, text="Format")
-        self.format_label.grid(row=5, column=1, sticky='W', padx=10)
+        self.format_label.grid(row=6, column=1, sticky='W', padx=10)
 
         self.rating_label = tk.Label(root, text="Rating")
-        self.rating_label.grid(row=6, column=1, sticky='W', padx=10)
+        self.rating_label.grid(row=7, column=1, sticky='W', padx=10)
 
-        self.review_label = tk.Label(root, text="Review (optional)", padx=10)
-        self.review_label.grid(row=7, column=1, sticky='W')
+        self.review_label = tk.Label(root, text="Review\n (optional)", padx=10)
+        self.review_label.grid(row=8, column=1, sticky='W')
 
-        self.title = tk.Entry(root, width=40)
-        self.title.grid(row=2, column=2, columnspan=15,
-                        sticky='W', pady=(25, 5))
+        # Widgets
+        self.email = tk.Entry(root, width=20)
+        if user['email']:
+            self.email.insert(0, user['email'])
+        else:
+            self.email.insert(0, 'Email')
+        self.email.grid(row=2, column=2, columnspan=3,
+                        sticky='W', pady=(30, 5))
 
-        self.author = tk.Entry(root, width=40)
-        self.author.grid(row=3, column=2, columnspan=15, sticky='w', pady=5)
+        self.password = tk.Entry(root, width=20)
+        if user['password']:
+            self.password.insert(0, '********')
+        else:
+            self.password.insert(0, 'Password')
+        self.password.grid(row=2, column=4, columnspan=3, sticky='W',
+                           pady=(30, 5))
+
+        self.save = tk.IntVar()
+        self.save_box = tk.Checkbutton(root, text='Save Password',
+                                       variable=self.save, onvalue=True,
+                                       offvalue=False)
+        self.save_box.grid(row=2, column=7, sticky='W', pady=(30, 5))
+        # Select save by default if password already saved
+        if user['password']:
+            self.save_box.select()
+
+        self.title = tk.Entry(root, width=45)
+        self.title.grid(row=3, column=2, columnspan=6,
+                        sticky='W', pady=10)
+
+        self.author = tk.Entry(root, width=45)
+        self.author.grid(row=4, column=2, columnspan=6, sticky='w', pady=5)
 
         self.date = tk.Entry(root, width=8)
-        self.date.insert(0, 'DD/MM/YY')
-        self.date.grid(row=4, column=2, sticky='w', pady=10, ipady=3)
+        self.date.insert(0, today)
+        self.date.grid(row=5, column=2, sticky='W', pady=10, ipady=3)
 
         self.today_button = tk.Button(root, text="Today",
                                       command=self.set_today)
 
-        self.today_button.grid(row=4, column=3, sticky='w', pady=10)
+        self.today_button.grid(row=5, column=3, sticky='W', pady=10,)
 
         self.yesterday_button = tk.Button(root, text="Yesterday",
                                           command=self.set_yesterday)
-        self.yesterday_button.grid(row=4, column=4, sticky='w', pady=10)
+        self.yesterday_button.grid(row=5, column=4, sticky='W', pady=10)
 
         formats = ("Paperback", "Hardback", "Kindle", "Ebook",)
         self.book_format = tk.StringVar()
         self.book_format.set('Kindle')
         self.format_drop = tk.OptionMenu(root, self.book_format, *formats)
-        self.format_drop.grid(row=5, column=2, columnspan=2,
-                              sticky='w', pady=5)
+        self.format_drop.grid(row=6, column=2, columnspan=3,
+                              sticky='W', pady=5)
 
         stars = ("1", "2", "3", "4", "5")
         self.star = tk.StringVar()
         self.star.set('3')
         self.rating = tk.OptionMenu(root, self.star, *stars)
-        self.rating.grid(row=6, column=2, sticky='w', pady=5)
+        self.rating.grid(row=7, column=2, sticky='W', pady=5)
 
         self.review = tk.Text(root, height=15, width=75, wrap=tk.WORD)
-        self.review.grid(row=7, column=2, columnspan=15, sticky='e', pady=5)
+        self.review.grid(row=8, column=2, columnspan=7, sticky='W', pady=5)
 
         self.submit_button = tk.Button(root, text="Mark as Read",
                                        command=self.parse_input)
-        self.submit_button.grid(row=12, column=16, sticky='e', pady=20)
+        self.submit_button.grid(row=12, column=7, columnspan=2,
+                                sticky='E', pady=15)
 
     def set_today(self):
         """Insert today's date into date Entry field."""
         self.date.delete(0, 8)
         self.date.insert(0, today)
-        self.yesterday_button.config(relief='raised')
-        self.today_button.config(relief='sunken')
 
     def set_yesterday(self):
         """Insert yesterday's date into date Entry field."""
         self.date.delete(0, 8)
         self.date.insert(0, yesterday)
-        self.today_button.config(relief='raised')
-        self.yesterday_button.config(relief='sunken')
 
     def parse_input(self):
         """Create and verify the book details inputted to the GUI."""
+        user['email'] = self.email.get()
+        user['save_pass'] = self.save.get()
+
+        password = self.password.get()
+        if password != '********':
+            user['password'] = password
+
         book_info['title'] = self.title.get()
         book_info['author'] = self.author.get()
         book_info['format'] = self.book_format.get()
@@ -115,10 +149,12 @@ class GuiInput:
         book_info['review'] = self.review.get('1.0', 'end-1c')
 
         try:
-            assert book_info['title'] != ''
-            assert book_info['author'] != ''
-            assert book_info['format'] != ''
-            assert book_info['rating'] != ''
+            assert user['email'] != 'Email'
+            assert user['password'] != 'Password'
+            assert book_info['title']
+            assert book_info['author']
+            assert book_info['format']
+            assert book_info['rating']
             assert book_info['date'] != 'DD/MM/YY'
             root.destroy()
 
@@ -352,19 +388,13 @@ def write_config(email, password, prompt):
 
 
 def user_info():
-    """Retrieve user info from config file or prompt for it if none saved."""
-    config = configparser.ConfigParser()
-    config.read('settings.ini')
-    email = config.get('User', 'Email')
-    password = config.get('User', 'Password')
-    prompt = config.get('Settings', 'Prompt')
-
-    if email == "":
+    """Prompt for missing user info unless prompt is disabled."""
+    if not user['email']:
         email = input('Email: ')
-    if password == "":
+    if not user['password']:
         password = input('Password: ')
-        if prompt == 'no':
-            return (email, password)
+        if user['prompt'] == 'no':
+            return
 
         save = input("Save Password?(y/n): ")
         if save.lower() == 'y':
@@ -376,7 +406,19 @@ def user_info():
             else:
                 write_config(email, "", 'yes')
 
-    return (email, password)
+
+def retrieve_user(gui=True):
+    """Retrieve user info from config file."""
+    config = configparser.ConfigParser()
+    config.read('settings.ini')
+    email = config.get('User', 'Email')
+    password = config.get('User', 'Password')
+    prompt = config.get('Settings', 'Prompt')
+
+    if gui:
+        return (email, password)
+
+    return (email, password, prompt)
 
 
 if __name__ == '__main__':
@@ -385,6 +427,9 @@ if __name__ == '__main__':
     yesterday = dt.strftime(dt.now() - timedelta(1), '%d/%m/%y')
 
     if len(sys.argv) in (6, 7):
+        retrieved_info = retrieve_user(gui=False)
+        user['email'], user['password'], user['prompt'] = retrieved_info
+        user_info()
         book_info = {
             'title': sys.argv[1], 'author': sys.argv[2], 'date': sys.argv[3],
             'format': sys.argv[4], 'rating': sys.argv[5],  'review': None,
@@ -399,19 +444,23 @@ if __name__ == '__main__':
             book_info['date'] = yesterday
 
     else:
+        user = {}
+        user['email'], user['password'] = retrieve_user()
         book_info = {}
         root = tk.Tk()
         root.protocol("WM_DELETE_WINDOW", exit)
         gui = GuiInput(root)
         root.mainloop()
-
-    email, password = user_info()
+        if user['save_pass']:
+            write_config(user['email'], user['password'], 'no')
+        else:
+            write_config(user['email'], "", 'yes')
 
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
     driver.implicitly_wait(20)
 
-    goodreads_login(driver, email, password)
+    goodreads_login(driver, user['email'], user['password'])
     url = goodreads_find(driver, book_info['title'], book_info['author'],
                          book_info['format'])
 
