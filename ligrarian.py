@@ -5,9 +5,9 @@
 import configparser
 from datetime import datetime as dt
 from datetime import timedelta
+import sys
 import tkinter as tk
 import tkinter.messagebox
-import sys
 
 import bs4
 import openpyxl
@@ -103,14 +103,14 @@ class GuiInput:
 
         formats = ("Paperback", "Hardback", "Kindle", "Ebook",)
         self.book_format = tk.StringVar()
-        self.book_format.set('Kindle')
+        self.book_format.set(settings['format'])
         self.format_drop = tk.OptionMenu(root, self.book_format, *formats)
         self.format_drop.grid(row=6, column=2, columnspan=3,
                               sticky='W', pady=5)
 
         stars = ("1", "2", "3", "4", "5")
         self.star = tk.StringVar()
-        self.star.set('3')
+        self.star.set(settings['rating'])
         self.rating = tk.OptionMenu(root, self.star, *stars)
         self.rating.grid(row=7, column=2, sticky='W', pady=5)
 
@@ -384,7 +384,10 @@ def write_config(email, password, prompt):
         f.write('Password = ' + password + '\n')
         f.write('\n')
         f.write('[Settings]\n')
-        f.write('Prompt = ' + prompt)
+        f.write('Prompt = ' + prompt + '\n')
+        f.write('Path = ' + settings['path'] + '\n')
+        f.write('Format = ' + settings['format'] + '\n')
+        f.write('Rating = ' + settings['rating'] + '\n')
 
 
 def user_info():
@@ -407,18 +410,16 @@ def user_info():
                 write_config(email, "", 'yes')
 
 
-def retrieve_user(gui=True):
-    """Retrieve user info from config file."""
+def retrieve_user():
+    """Retrieve user info from settings file and create dictionary entries."""
     config = configparser.ConfigParser()
     config.read('settings.ini')
-    email = config.get('User', 'Email')
-    password = config.get('User', 'Password')
-    prompt = config.get('Settings', 'Prompt')
-
-    if gui:
-        return (email, password)
-
-    return (email, password, prompt)
+    user['email'] = config.get('User', 'Email')
+    user['password'] = config.get('User', 'Password')
+    settings['prompt'] = config.get('Settings', 'Prompt')
+    settings['path'] = config.get('Settings', 'Path')
+    settings['format'] = config.get('Settings', 'Format')
+    settings['rating'] = config.get('Settings', 'Rating')
 
 
 if __name__ == '__main__':
@@ -426,9 +427,12 @@ if __name__ == '__main__':
     today = dt.strftime(dt.now(), '%d/%m/%y')
     yesterday = dt.strftime(dt.now() - timedelta(1), '%d/%m/%y')
 
+    # Start dictionaries and retrieve information from settings
+    user = {}
+    settings = {}
+    retrieve_user()
+
     if len(sys.argv) in (6, 7):
-        retrieved_info = retrieve_user(gui=False)
-        user['email'], user['password'], user['prompt'] = retrieved_info
         user_info()
         book_info = {
             'title': sys.argv[1], 'author': sys.argv[2], 'date': sys.argv[3],
@@ -444,8 +448,6 @@ if __name__ == '__main__':
             book_info['date'] = yesterday
 
     else:
-        user = {}
-        user['email'], user['password'] = retrieve_user()
         book_info = {}
         root = tk.Tk()
         root.protocol("WM_DELETE_WINDOW", exit)
@@ -469,7 +471,7 @@ if __name__ == '__main__':
     driver.close()
     print('Goodreads account updated.')
 
-    wb = openpyxl.load_workbook('Ligrarian.xlsx')
+    wb = openpyxl.load_workbook(settings['path'])
     print('Updating Spreadsheet...')
     info = parse_page(url)
 
@@ -481,6 +483,6 @@ if __name__ == '__main__':
     input_info('Overall', info['title'], info['author'], info['pages'],
                info['category'], info['genre'], book_info['date'])
 
-    wb.save('Ligrarian.xlsx')
+    wb.save(settings['path'])
 
     print('Ligrarian has completed and will now close.')
