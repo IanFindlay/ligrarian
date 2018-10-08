@@ -39,7 +39,7 @@ A Goodreads librarian - Automates marking a book as read on [Goodreads](https://
 
 To get started using Ligrarian, download the directory and place it wherever you want within your system. Install the modules listed in requirements.txt, Firefox and the [geckodriver](https://github.com/mozilla/geckodriver) for it.
 
-Running ligrarian.py through Python 3 will load the GUI pictured below. Simply fill out all of the non-optional fields and press 'Mark as Read'. The GUI window will close, an automated Firefox session will begin and your account and the spreadsheet will soon be updated.
+Running ligrarian.py through Python 3 will load the GUI. Simply fill out all of the non-optional fields and press 'Mark as Read'. The GUI window will close, an automated Firefox session will begin and your account and the spreadsheet will soon be updated.
 
 Your email is saved to the config.ini file in the same directory, so you won't have to enter it every time, but whether or not your password is saved (in plain text in the same file) is up to you. Checking the 'Save Password' box at the end of the first row of the GUI will save your password, which will appear as '********' in future GUI sessions.
 
