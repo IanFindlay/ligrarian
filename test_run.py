@@ -8,7 +8,9 @@ from selenium.webdriver.common.keys import Keys
 
 import ligrarian as main
 
-username, password = main.retrieve_user()
+main.user = {}
+main.settings = {}
+main.retrieve_user()
 today = dt.strftime(dt.now(), '%d/%m/%y')
 book_info = {
     'title': 'Cannery Row', 'author': 'John Steinbeck', 'date': today,
@@ -18,7 +20,7 @@ book_info = {
 driver = webdriver.Firefox()
 driver.implicitly_wait(10)
 
-main.goodreads_login(driver, username, password)
+main.goodreads_login(driver, main.user['email'], main.user['password'])
 url = main.goodreads_find(driver, book_info['title'], book_info['author'],
                           book_info['format'])
 
