@@ -26,7 +26,7 @@ A Goodreads librarian - Automates marking a book as read on [Goodreads](https://
     * **How many books you've read**
     * **How many pages you've read**
     * **Average book length**
-    * **How many of the books are Fiction and how many are Nonfiction**
+    * **How many of the books are fiction and how many are nonfiction**
     * **Most read author, how many books of theirs you've read and what percentage of your total that equates to**
     * **How many different authors you've read**
     * **Most read genre, how many books in that genre you've read and what percentage of your total that equates to**
@@ -37,13 +37,13 @@ A Goodreads librarian - Automates marking a book as read on [Goodreads](https://
 
 ## Usage Instructions
 
-To get started using Ligrarian, download the directory and place it wherever you want within your system. Install the modules listed in requirements.txt, Firefox and the [geckodriver](https://github.com/mozilla/geckodriver) for it.
+To get started using Ligrarian, download the directory and place it wherever you want within your system. Install the modules listed in requirements.txt as well as a recent release of Firefox and the [geckodriver](https://github.com/mozilla/geckodriver) for it.
 
 Running ligrarian.py through Python 3 will load the GUI. Simply fill out all of the non-optional fields and press 'Mark as Read'. The GUI window will close, an automated Firefox session will begin and your account and the spreadsheet will soon be updated.
 
-Your email is saved to the config.ini file in the same directory, so you won't have to enter it every time, but whether or not your password is saved (in plain text in the same file) is up to you. Checking the 'Save Password' box at the end of the first row of the GUI will save your password, which will appear as '********' in future GUI sessions.
+Your Email is saved to the config.ini file in the same directory, so you won't have to enter it every time, and your Password can be saved by checking the 'Save Password' box at the end of the first row of the GUI. Ocen saved, your Password will appear as '********' in future GUI sessions.
 
-This GUI can, however, be bypassed through the use of command line arguments. You will be prompted for your Email and Password if they are not saved, asked if you would like to save your Password and finally, if you opt not to save it, asked if you would like the Save Password prompt itself to be disabled. You can also, at any time, edit the config file direcly usign a text editor.
+This GUI can be bypassed through the use of command line arguments. You will be prompted for your Email and Password if they are not saved, asked if you would like to save your Password and finally, if you opt not to save it, asked if you would like the Save Password prompt itself to be disabled. These settings, and others including the path to the Spreadsheet and the Defaults for some of the GUI fields, can be directly altered within the settings.ini file.
 
 The format and order for the command line arguments are as follows:
 
