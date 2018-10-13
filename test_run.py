@@ -6,11 +6,10 @@ from datetime import datetime as dt
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 
-import ligrarian as main
+import ligrarian
 
-main.user = {}
-main.settings = {}
-main.retrieve_user()
+email = ligrarian.get_setting('User', 'Email')
+password = ligrarian.get_setting('User', 'Password')
 today = dt.strftime(dt.now(), '%d/%m/%y')
 book_info = {
     'title': 'Cannery Row', 'author': 'John Steinbeck', 'date': today,
@@ -20,11 +19,11 @@ book_info = {
 driver = webdriver.Firefox()
 driver.implicitly_wait(10)
 
-main.goodreads_login(driver, main.user['email'], main.user['password'])
-url = main.goodreads_find(driver, book_info['title'], book_info['author'],
+ligrarian.goodreads_login(driver, email, password)
+url = ligrarian.goodreads_find(driver, book_info['title'], book_info['author'],
                           book_info['format'])
 
-shelves_list = main.goodreads_update(driver, book_info['date'],
+shelves_list = ligrarian.goodreads_update(driver, book_info['date'],
                                      book_info['review'], book_info['rating'])
 
 
