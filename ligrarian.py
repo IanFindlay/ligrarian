@@ -1,6 +1,17 @@
 #!/usr/bin/env python3
 
-"""Automatically update Goodreads and local Spreadsheet with book read info."""
+"""Automatically update Goodreads and local Spreadsheet with book read info.
+
+   Without arguments ligrarian.py loads a GUI which can be skipped
+   via the use of 5 required and one optional positional sys arguments:
+       Title of Book: Enclosed in double quotation marks
+       Author of Book: Enclosed in double quotation marks
+       Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YY
+       Format: (p)aperback, (h)ardcover, (k)indle or (e)book
+       Rating: Number between 1 and 5
+       Review (Optional): Enclosed in double quotation marks
+
+"""
 
 import configparser
 from datetime import datetime as dt
@@ -21,103 +32,111 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 
 
-class GuiInput:
-    """Ligrarian GUI structure and related methods."""
+class GuiInput():
+    """Ligrarian GUI layout and related methods."""
 
-    def __init__(self, master):
+    def __init__(self, master, email, password, today, yesterday):
+        self.email = email
+        self.password = password
+        self.today = today
+        self.yesterday = yesterday
+
         self.master = master
         self.master.title("Ligrarian")
         self.width = 665
         self.height = 560
         self.geometry_string = "{}x{}".format(self.width, self.height)
-        root.geometry(self.geometry_string)
+        self.master.geometry(self.geometry_string)
 
         # Labels
-        self.login_label = tk.Label(root, text="Login")
+        self.login_label = tk.Label(self.master, text="Login")
         self.login_label.grid(row=2, column=1, sticky='W',
                               pady=(30, 5), padx=10)
 
-        self.title_label = tk.Label(root, text="Title")
+        self.title_label = tk.Label(self.master, text="Title")
         self.title_label.grid(row=3, column=1, sticky='W', padx=10)
 
-        self.author_label = tk.Label(root, text="Author")
+        self.author_label = tk.Label(self.master, text="Author")
         self.author_label.grid(row=4, column=1, sticky='W', padx=10)
 
-        self.date_label = tk.Label(root, text="Date")
+        self.date_label = tk.Label(self.master, text="Date")
         self.date_label.grid(row=5, column=1, sticky='W', padx=10)
 
-        self.format_label = tk.Label(root, text="Format")
+        self.format_label = tk.Label(self.master, text="Format")
         self.format_label.grid(row=6, column=1, sticky='W', padx=10)
 
-        self.rating_label = tk.Label(root, text="Rating")
+        self.rating_label = tk.Label(self.master, text="Rating")
         self.rating_label.grid(row=7, column=1, sticky='W', padx=10)
 
-        self.review_label = tk.Label(root, text="Review\n (optional)", padx=10)
+        self.review_label = tk.Label(self.master, text="Review\n (optional)",
+                                     padx=10)
         self.review_label.grid(row=8, column=1, sticky='W')
 
         # Widgets
-        self.email = tk.Entry(root, width=20)
-        if user['email']:
-            self.email.insert(0, user['email'])
+        self.login_email = tk.Entry(self.master, width=20)
+        if self.email:
+            self.login_email.insert(0, self.email)
         else:
-            self.email.insert(0, 'Email')
-        self.email.grid(row=2, column=2, columnspan=3,
-                        sticky='W', pady=(30, 5))
+            self.login_email.insert(0, 'Email')
+        self.login_email.grid(row=2, column=2, columnspan=3,
+                              sticky='W', pady=(30, 5))
 
-        self.password = tk.Entry(root, width=20)
-        if user['password']:
-            self.password.insert(0, '********')
+        self.login_password = tk.Entry(self.master, width=20)
+        if self.password:
+            self.login_password.insert(0, '********')
         else:
-            self.password.insert(0, 'Password')
-        self.password.grid(row=2, column=4, columnspan=3, sticky='W',
-                           pady=(30, 5))
+            self.login_password.insert(0, 'Password')
+        self.login_password.grid(row=2, column=4, columnspan=3, sticky='W',
+                                 pady=(30, 5))
 
         self.save = tk.IntVar()
-        self.save_box = tk.Checkbutton(root, text='Save Password',
+        self.save_box = tk.Checkbutton(self.master, text='Save Password',
                                        variable=self.save, onvalue=True,
                                        offvalue=False)
         self.save_box.grid(row=2, column=7, sticky='W', pady=(30, 5))
         # Select save by default if password already saved
-        if user['password']:
+        if self.password:
             self.save_box.select()
 
-        self.title = tk.Entry(root, width=45)
+        self.title = tk.Entry(self.master, width=45)
         self.title.grid(row=3, column=2, columnspan=6,
                         sticky='W', pady=10)
 
-        self.author = tk.Entry(root, width=45)
+        self.author = tk.Entry(self.master, width=45)
         self.author.grid(row=4, column=2, columnspan=6, sticky='w', pady=5)
 
-        self.date = tk.Entry(root, width=8)
+        self.date = tk.Entry(self.master, width=8)
         self.date.insert(0, today)
         self.date.grid(row=5, column=2, sticky='W', pady=10, ipady=3)
 
-        self.today_button = tk.Button(root, text="Today",
+        self.today_button = tk.Button(self.master, text="Today",
                                       command=self.set_today)
 
         self.today_button.grid(row=5, column=3, sticky='W', pady=10,)
 
-        self.yesterday_button = tk.Button(root, text="Yesterday",
+        self.yesterday_button = tk.Button(self.master, text="Yesterday",
                                           command=self.set_yesterday)
         self.yesterday_button.grid(row=5, column=4, sticky='W', pady=10)
 
+        def_format = get_setting('Defaults', 'Format')
         formats = ("Paperback", "Hardback", "Kindle", "Ebook",)
         self.book_format = tk.StringVar()
-        self.book_format.set(settings['format'])
-        self.format_drop = tk.OptionMenu(root, self.book_format, *formats)
-        self.format_drop.grid(row=6, column=2, columnspan=3,
-                              sticky='W', pady=5)
+        self.book_format.set(def_format)
+        self.format = tk.OptionMenu(self.master, self.book_format, *formats)
+        self.format.grid(row=6, column=2, columnspan=3,
+                         sticky='W', pady=5)
 
+        def_rating = get_setting('Defaults', 'Rating')
         stars = ("1", "2", "3", "4", "5")
         self.star = tk.StringVar()
-        self.star.set(settings['rating'])
-        self.rating = tk.OptionMenu(root, self.star, *stars)
+        self.star.set(def_rating)
+        self.rating = tk.OptionMenu(self.master, self.star, *stars)
         self.rating.grid(row=7, column=2, sticky='W', pady=5)
 
-        self.review = tk.Text(root, height=15, width=75, wrap=tk.WORD)
+        self.review = tk.Text(self.master, height=15, width=75, wrap=tk.WORD)
         self.review.grid(row=8, column=2, columnspan=7, sticky='W', pady=5)
 
-        self.submit_button = tk.Button(root, text="Mark as Read",
+        self.submit_button = tk.Button(self.master, text="Mark as Read",
                                        command=self.parse_input)
         self.submit_button.grid(row=12, column=7, columnspan=2,
                                 sticky='E', pady=15)
@@ -125,38 +144,38 @@ class GuiInput:
     def set_today(self):
         """Insert today's date into date Entry field."""
         self.date.delete(0, 8)
-        self.date.insert(0, today)
+        self.date.insert(0, self.today)
 
     def set_yesterday(self):
         """Insert yesterday's date into date Entry field."""
         self.date.delete(0, 8)
-        self.date.insert(0, yesterday)
+        self.date.insert(0, self.yesterday)
 
     def parse_input(self):
         """Create and verify the book details inputted to the GUI."""
-        user['email'] = self.email.get()
-        user['save_pass'] = self.save.get()
+        self.email = self.login_email.get()
+        self.save = self.save.get()
 
-        password = self.password.get()
+        password = self.login_password.get()
         if password != '********':
-            user['password'] = password
+            self.password = password
 
-        book_info['title'] = self.title.get()
-        book_info['author'] = self.author.get()
-        book_info['format'] = self.book_format.get()
-        book_info['rating'] = self.star.get()
-        book_info['date'] = self.date.get()
-        book_info['review'] = self.review.get('1.0', 'end-1c')
+        self.book_title = self.title.get()
+        self.book_author = self.author.get()
+        self.book_format = self.book_format.get()
+        self.book_rating = self.star.get()
+        self.book_date = self.date.get()
+        self.book_review = self.review.get('1.0', 'end-1c')
 
         try:
-            assert user['email'] != 'Email'
-            assert user['password'] != 'Password'
-            assert book_info['title']
-            assert book_info['author']
-            assert book_info['format']
-            assert book_info['rating']
-            assert book_info['date'] != 'DD/MM/YY'
-            root.destroy()
+            assert self.email != 'Email'
+            assert self.password != 'Password'
+            assert self.book_title
+            assert self.book_author
+            assert self.book_format
+            assert self.book_rating
+            assert self.book_date != 'DD/MM/YY'
+            self.master.destroy()
 
         except AssertionError:
             tk.messagebox.showwarning(message="Complete all non-optional "
@@ -182,7 +201,7 @@ def goodreads_login(driver, email, password):
 
 
 def goodreads_find(driver, title, author, book_format):
-    """Find the correct book, in the correct format, on Goodreads."""
+    """Find the book in the specified format on Goodreads and return URL."""
 
     # Find correct book and edition
     search_elem = driver.find_element_by_class_name('searchBox__input')
@@ -218,7 +237,7 @@ def goodreads_find(driver, title, author, book_format):
 
 
 def goodreads_update(driver, date_done, review, rating):
-    """Update Goodreads by marking book as read and adding information."""
+    """Review book on Goodreads, parse and return the book's 'Top Shelves'."""
     # Mark as Read
     menu_elem = driver.find_element_by_class_name('wtrShelfButton')
     menu_elem.click()
@@ -293,7 +312,7 @@ def goodreads_update(driver, date_done, review, rating):
     return shelves
 
 
-def parse_page(url):
+def parse_page(url, shelves_list):
     """Parse and return page information needed for spreadsheet."""
     info = {}
     res = requests.get(url)
@@ -334,11 +353,11 @@ def parse_page(url):
     return info
 
 
-def input_info(sheet_name, title, author, pages, category, genre, date_done):
+def input_info(wb, sheet_name, title, author, pages, category, genre, date):
     """Write the book information to the first blank row on the given sheet."""
     sheet_names = wb.sheetnames
     if sheet_name not in sheet_names:
-        create_sheet(sheet_names[-1], sheet_name)
+        create_sheet(wb, sheet_names[-1], sheet_name)
 
     sheet = wb[sheet_name]
 
@@ -349,11 +368,11 @@ def input_info(sheet_name, title, author, pages, category, genre, date_done):
     sheet.cell(row=input_row, column=3).value = pages
     sheet.cell(row=input_row, column=4).value = category
     sheet.cell(row=input_row, column=5).value = genre
-    sheet.cell(row=input_row, column=6).value = date_done
+    sheet.cell(row=input_row, column=6).value = date
 
 
 def first_blank(sheet):
-    """Return the first blank row of the given sheet."""
+    """Return the number of the first blank row of the given sheet."""
     input_row = 1
     data = ''
     while data is not None:
@@ -363,8 +382,8 @@ def first_blank(sheet):
     return input_row
 
 
-def create_sheet(last_sheet, sheet_name):
-    """Create a new sheet by copying and modifying the last one."""
+def create_sheet(wb, last_sheet, sheet_name):
+    """Create a new sheet by copying and modifying the latest one."""
     sheet = wb.copy_worksheet(wb[last_sheet])
     sheet.title = sheet_name
     last_row = first_blank(sheet)
@@ -378,26 +397,33 @@ def create_sheet(last_sheet, sheet_name):
 
 def write_config(email, password, prompt):
     """Write configuration file."""
-    with open('settings.ini', 'w') as f:
-        f.write('[User]\n')
-        f.write('Email = ' + email + '\n')
-        f.write('Password = ' + password + '\n')
-        f.write('\n')
-        f.write('[Settings]\n')
-        f.write('Prompt = ' + prompt + '\n')
-        f.write('Path = ' + settings['path'] + '\n')
-        f.write('Format = ' + settings['format'] + '\n')
-        f.write('Rating = ' + settings['rating'] + '\n')
+    config = configparser.ConfigParser()
+    config.read('settings.ini')
+    config.set('User', 'Email', email)
+    config.set('User', 'Password', password)
+    config.set('Settings', 'Prompt', prompt)
+
+    with open('settings.ini', 'w') as configfile:
+        config.write(configfile)
+
+
+def get_setting(section, option):
+    """Return the value associated with option under section in settings"""
+    config = configparser.ConfigParser()
+    config.read('settings.ini')
+    value = config.get(section, option)
+
+    return value
 
 
 def user_info():
     """Prompt for missing user info unless prompt is disabled."""
-    if not user['email']:
+    if not get_setting('User', 'Email'):
         email = input('Email: ')
-    if not user['password']:
+    if not get_setting('User', 'Password'):
         password = input('Password: ')
-        if user['prompt'] == 'no':
-            return
+        if get_setting('Settings', 'Prompt') == 'no':
+            return (email, password)
 
         save = input("Save Password?(y/n): ")
         if save.lower() == 'y':
@@ -410,27 +436,11 @@ def user_info():
                 write_config(email, "", 'yes')
 
 
-def retrieve_user():
-    """Retrieve user info from settings file and create dictionary entries."""
-    config = configparser.ConfigParser()
-    config.read('settings.ini')
-    user['email'] = config.get('User', 'Email')
-    user['password'] = config.get('User', 'Password')
-    settings['prompt'] = config.get('Settings', 'Prompt')
-    settings['path'] = config.get('Settings', 'Path')
-    settings['format'] = config.get('Settings', 'Format')
-    settings['rating'] = config.get('Settings', 'Rating')
-
-
-if __name__ == '__main__':
+def main():
+    """Update Goodreads account, write site's book info to local spreasheet."""
 
     today = dt.strftime(dt.now(), '%d/%m/%y')
     yesterday = dt.strftime(dt.now() - timedelta(1), '%d/%m/%y')
-
-    # Start dictionaries and retrieve information from settings
-    user = {}
-    settings = {}
-    retrieve_user()
 
     if len(sys.argv) in (6, 7):
         user_info()
@@ -448,21 +458,28 @@ if __name__ == '__main__':
             book_info['date'] = yesterday
 
     else:
-        book_info = {}
+        email = get_setting('User', 'Email')
+        password = get_setting('User', 'Password')
         root = tk.Tk()
         root.protocol("WM_DELETE_WINDOW", exit)
-        gui = GuiInput(root)
+        gui = GuiInput(root, email, password, today, yesterday)
         root.mainloop()
-        if user['save_pass']:
-            write_config(user['email'], user['password'], 'no')
+        book_info = {
+            'title': gui.book_title, 'author': gui.book_author,
+            'date': gui.book_date, 'format': gui.book_format,
+            'rating': gui.book_rating,  'review': gui.book_review,
+        }
+
+        if gui.save:
+            write_config(email, password, 'no')
         else:
-            write_config(user['email'], "", 'yes')
+            write_config(email, "", 'yes')
 
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
     driver.implicitly_wait(20)
 
-    goodreads_login(driver, user['email'], user['password'])
+    goodreads_login(driver, email, password)
     url = goodreads_find(driver, book_info['title'], book_info['author'],
                          book_info['format'])
 
@@ -471,18 +488,24 @@ if __name__ == '__main__':
     driver.close()
     print('Goodreads account updated.')
 
-    wb = openpyxl.load_workbook(settings['path'])
+    path = get_setting('Settings', 'Path')
+    wb = openpyxl.load_workbook(path)
     print('Updating Spreadsheet...')
-    info = parse_page(url)
+    info = parse_page(url, shelves_list)
 
     year_sheet = '20' + book_info['date'][-2:]
 
-    input_info(year_sheet, info['title'], info['author'], info['pages'],
+    input_info(wb, year_sheet, info['title'], info['author'], info['pages'],
                info['category'], info['genre'], book_info['date'])
 
-    input_info('Overall', info['title'], info['author'], info['pages'],
+    input_info(wb, 'Overall', info['title'], info['author'], info['pages'],
                info['category'], info['genre'], book_info['date'])
 
-    wb.save(settings['path'])
+    wb.save(path)
 
     print('Ligrarian has completed and will now close.')
+
+
+if __name__ == '__main__':
+
+    main()
