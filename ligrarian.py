@@ -2,17 +2,21 @@
 
 """Automatically update Goodreads and local Spreadsheet with book read info.
 
-   Without arguments ligrarian.py loads a GUI which can be skipped
-   via the use of 5 required and one optional positional sys arguments:
-       Title of Book: Enclosed in double quotation marks
-       Author of Book: Enclosed in double quotation marks
-       Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YY
-       Format: (p)aperback, (h)ardcover, (k)indle or (e)book
-       Rating: Number between 1 and 5
-       Review (Optional): Enclosed in double quotation marks
+Without arguments ligrarian.py loads a GUI. This can be bypassed via arguments
+
+Args:
+    Title of Book: Enclosed in double quotation marks
+    Author of Book: Enclosed in double quotation marks
+    Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YY
+    Format: (p)aperback, (h)ardcover, (k)indle or (e)book
+    Rating: Number between 1 and 5
+
+Optional Args:
+    Review (Optional): Enclosed in double quotation marks
 
 """
 
+import argparse
 import configparser
 from datetime import datetime as dt
 from datetime import timedelta
@@ -442,14 +446,32 @@ def main():
     today = dt.strftime(dt.now(), '%d/%m/%y')
     yesterday = dt.strftime(dt.now() - timedelta(1), '%d/%m/%y')
 
-    if len(sys.argv) in (6, 7):
+    if len(sys.argv) > 1:
+        # Bypass GUI and process command line arguments if given
+        parser = argparse.ArgumentParser(description="Goodreads updater")
+        parser.add_argument('title', metavar="'title'",
+                            help="Book title enclosed within quotes")
+        parser.add_argument('author', metavar="'author'",
+                            help="Book author enclosed within quotes")
+        parser.add_argument('date', help=("(t)oday, (y)esterday or "
+                                          "date formatted DD/MM/YY"))
+        parser.add_argument('format', metavar='format',
+                            choices=['e', 'h', 'k', 'p'],
+                            help="(p)aperback, (h)ardcover, (k)indle, (e)book")
+        parser.add_argument('rating', type=int, metavar='rating',
+                            choices=[1, 2, 3, 4, 5],
+                            help="A number 1 through 5")
+        parser.add_argument('review', nargs='?', metavar="'review'",
+                            help="Review enclosed in double quotes")
+
+        args = parser.parse_args()
+
         user_info()
         book_info = {
-            'title': sys.argv[1], 'author': sys.argv[2], 'date': sys.argv[3],
-            'format': sys.argv[4], 'rating': sys.argv[5],  'review': None,
+            'title': args.title, 'author': args.author,
+            'date': args.date, 'format': args.format,
+            'rating': args.rating, 'review': args.review,
         }
-        if len(sys.argv) == 7:
-            book_info['review'] = sys.argv[6]
 
         # Process date if given as (t)oday or (y)esterday into proper format
         if book_info['date'].lower() == 't':
@@ -458,6 +480,7 @@ def main():
             book_info['date'] = yesterday
 
     else:
+        # Get required information and load GUI
         email = get_setting('User', 'Email')
         password = get_setting('User', 'Password')
         root = tk.Tk()
@@ -507,5 +530,4 @@ def main():
 
 
 if __name__ == '__main__':
-
     main()
