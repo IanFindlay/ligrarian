@@ -440,38 +440,40 @@ def user_info():
                 write_config(email, "", 'yes')
 
 
-def main():
-    """Update Goodreads account, write site's book info to local spreasheet."""
+def parse_arguments():
+    """Parse command line arguments and return a dictionary of their values."""
+    parser = argparse.ArgumentParser(description="Goodreads updater")
+    parser.add_argument('title', metavar="'title'",
+                        help="Book title enclosed within quotes")
+    parser.add_argument('author', metavar="'author'",
+                        help="Book author enclosed within quotes")
+    parser.add_argument('date', help=("(t)oday, (y)esterday or "
+                                      "date formatted DD/MM/YY"))
+    parser.add_argument('format', metavar='format',
+                        choices=['e', 'h', 'k', 'p'],
+                        help="(p)aperback, (h)ardcover, (k)indle, (e)book")
+    parser.add_argument('rating', type=int, metavar='rating',
+                        choices=[1, 2, 3, 4, 5],
+                        help="A number 1 through 5")
+    parser.add_argument('review', nargs='?', metavar="'review'",
+                        help="Review enclosed in quotes")
 
+    args = parser.parse_args()
+
+    return vars(args)
+
+
+def main():
+    """Coordinate Updating of Goodreads account and writing to spreasheet."""
     today = dt.strftime(dt.now(), '%d/%m/%y')
     yesterday = dt.strftime(dt.now() - timedelta(1), '%d/%m/%y')
+    email = get_setting('User', 'Email')
+    password = get_setting('User', 'Password')
 
+    # Bypass GUI and process command line arguments if given
     if len(sys.argv) > 1:
-        # Bypass GUI and process command line arguments if given
-        parser = argparse.ArgumentParser(description="Goodreads updater")
-        parser.add_argument('title', metavar="'title'",
-                            help="Book title enclosed within quotes")
-        parser.add_argument('author', metavar="'author'",
-                            help="Book author enclosed within quotes")
-        parser.add_argument('date', help=("(t)oday, (y)esterday or "
-                                          "date formatted DD/MM/YY"))
-        parser.add_argument('format', metavar='format',
-                            choices=['e', 'h', 'k', 'p'],
-                            help="(p)aperback, (h)ardcover, (k)indle, (e)book")
-        parser.add_argument('rating', type=int, metavar='rating',
-                            choices=[1, 2, 3, 4, 5],
-                            help="A number 1 through 5")
-        parser.add_argument('review', nargs='?', metavar="'review'",
-                            help="Review enclosed in double quotes")
-
-        args = parser.parse_args()
-
         user_info()
-        book_info = {
-            'title': args.title, 'author': args.author,
-            'date': args.date, 'format': args.format,
-            'rating': args.rating, 'review': args.review,
-        }
+        book_info = parse_arguments()
 
         # Process date if given as (t)oday or (y)esterday into proper format
         if book_info['date'].lower() == 't':
@@ -480,9 +482,6 @@ def main():
             book_info['date'] = yesterday
 
     else:
-        # Get required information and load GUI
-        email = get_setting('User', 'Email')
-        password = get_setting('User', 'Password')
         root = tk.Tk()
         root.protocol("WM_DELETE_WINDOW", exit)
         gui = GuiInput(root, email, password, today, yesterday)
