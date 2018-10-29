@@ -1,10 +1,4 @@
 beautifulsoup4==4.6.3
-certifi==2018.8.24
-chardet==3.0.4
-et-xmlfile==1.0.1
-idna==2.7
-jdcal==1.4
-openpyxl==2.5.8
-requests==2.19.1
+openpyxl==2.5.9
+requests==2.20.0
 selenium==3.14.1
-urllib3==1.23
