@@ -491,6 +491,8 @@ def main():
             'date': gui.book_date, 'format': gui.book_format,
             'rating': gui.book_rating,  'review': gui.book_review,
         }
+        email = gui.email
+        password = gui.password
 
         if gui.save:
             write_config(email, password, 'no')
