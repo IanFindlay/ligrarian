@@ -23,14 +23,16 @@ driver = webdriver.Firefox()
 driver.implicitly_wait(10)
 
 ligrarian.goodreads_login(driver, email, password)
-url = ligrarian.goodreads_find(driver, book_info)
+ligrarian.goodreads_find(driver, book_info['title'], book_info['author'])
+url = ligrarian.goodreads_filter(driver, book_info['format'])
 
 # Check book is correct format
 info_rows = driver.find_elements_by_class_name('row')
 row_text = [row.text for row in info_rows]
 assert 'Kindle' in ''.join(row_text), "Book is in incorrect format."
 
-shelves_list = ligrarian.goodreads_update(driver, book_info)
+ligrarian.goodreads_read_box(driver, book_info['date'], book_info['review'])
+shelves = ligrarian.goodreads_shelves_stars(driver, book_info['rating'])
 
 undo_elem = driver.find_element_by_class_name('wtrStatusRead.wtrUnshelve')
 assert undo_elem, "Book wasn't marked as read."
@@ -48,14 +50,16 @@ driver.close()
 # Spreadsheet entry testing
 path = ligrarian.get_setting('Settings', 'Path')
 wb = openpyxl.load_workbook(path)
-print('Testing spreadsheet updating')
-info = ligrarian.parse_page(url, shelves_list)
+print('Testing spreadsheet updating.')
+info = ligrarian.parse_page(url)
+info['category'], info['genre'] = ligrarian.category_and_genre(shelves)
+print(info)
 
 year_sheet = '20' + book_info['date'][-2:]
 
 # Get first blank row before attempting to write
-pre_year = ligrarian.first_blank(wb[year_sheet])
-pre_overall = ligrarian.first_blank(wb['Overall'])
+pre_year = ligrarian.first_blank_row(wb[year_sheet])
+pre_overall = ligrarian.first_blank_row(wb['Overall'])
 wb.close()
 
 # Try to write info to both sheets
@@ -63,8 +67,8 @@ ligrarian.input_info(year_sheet, info, book_info['date'])
 
 # Find blank rows now that the data should have been entered
 wb = openpyxl.load_workbook(path)
-post_year = ligrarian.first_blank(wb[year_sheet])
-post_overall = ligrarian.first_blank(wb['Overall'])
+post_year = ligrarian.first_blank_row(wb[year_sheet])
+post_overall = ligrarian.first_blank_row(wb['Overall'])
 
 # Confirm data was entered
 assert pre_year < post_year, "Data not written to year sheet."
@@ -75,7 +79,7 @@ print("Data was written to sheet successfully.")
 for sheet in [year_sheet, 'Overall']:
     sheet = wb[sheet]
 
-    input_row = ligrarian.first_blank(sheet) - 1
+    input_row = ligrarian.first_blank_row(sheet) - 1
 
     sheet.cell(row=input_row, column=1).value = ''
     sheet.cell(row=input_row, column=2).value = ''

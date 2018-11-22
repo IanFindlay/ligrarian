@@ -186,14 +186,77 @@ class GuiInput():
                                       "fields before marking as read.")
 
 
+def parse_arguments():
+    """Parse command line arguments and return a dictionary of their values."""
+    parser = argparse.ArgumentParser(description="Goodreads updater")
+    parser.add_argument('title', metavar="'title'",
+                        help="Book title enclosed within quotes")
+    parser.add_argument('author', metavar="'author'",
+                        help="Book author enclosed within quotes")
+    parser.add_argument('date', help=("(t)oday, (y)esterday or "
+                                      "date formatted DD/MM/YY"))
+    parser.add_argument('format', metavar='format',
+                        choices=['e', 'h', 'k', 'p'],
+                        help="(p)aperback, (h)ardcover, (k)indle, (e)book")
+    parser.add_argument('rating', type=int, metavar='rating',
+                        choices=[1, 2, 3, 4, 5],
+                        help="A number 1 through 5")
+    parser.add_argument('review', nargs='?', metavar="'review'",
+                        help="Review enclosed in quotes")
+
+    args = parser.parse_args()
+
+    return vars(args)
+
+
+def get_setting(section, option):
+    """Return the value associated with option under section in settings"""
+    config = configparser.ConfigParser()
+    config.read('settings.ini')
+    value = config.get(section, option)
+
+    return value
+
+
+def user_info():
+    """Prompt for missing user info unless prompt is disabled."""
+    if not get_setting('User', 'Email'):
+        email = input('Email: ')
+    if not get_setting('User', 'Password'):
+        password = input('Password: ')
+        if get_setting('Settings', 'Prompt') == 'no':
+            return (email, password)
+
+        save = input("Save Password?(y/n): ")
+        if save.lower() == 'y':
+            write_config(email, password, 'yes')
+        elif save.lower() == 'n':
+            disable = input("Disable save Password prompt?(y/n): ")
+            if disable.lower() == 'y':
+                write_config(email, "", 'no')
+            else:
+                write_config(email, "", 'yes')
+
+
+def write_config(email, password, prompt):
+    """Write configuration file."""
+    config = configparser.ConfigParser()
+    config.read('settings.ini')
+    config.set('User', 'Email', email)
+    config.set('User', 'Password', password)
+    config.set('Settings', 'Prompt', prompt)
+
+    with open('settings.ini', 'w') as configfile:
+        config.write(configfile)
+
+
 def goodreads_login(driver, email, password):
     """Login to Goodreads account from the homepage."""
     driver.get('https://goodreads.com')
 
-    email_elem = driver.find_element_by_name('user[email]')
-    email_elem.send_keys(email)
+    driver.find_element_by_name('user[email]').send_keys(email)
     pass_elem = driver.find_element_by_name('user[password]')
-    pass_elem.send_keys(password)
+    pass_elem.send_keys(password, )
     pass_elem.send_keys(Keys.ENTER)
 
     try:
@@ -204,25 +267,22 @@ def goodreads_login(driver, email, password):
         exit()
 
 
-def goodreads_find(driver, book_info):
-    """Find the book in the specified format on Goodreads and return URL."""
-    title = book_info['title']
-    author = book_info['author']
-    book_format = book_info['format']
-
-    # Find correct book and edition
+def goodreads_find(driver, title, author):
+    """Find the book on Goodreads and navigate to all editions page."""
     search_elem = driver.find_element_by_class_name('searchBox__input')
     search_elem.send_keys(title + ' ' + author + '%3Dauthor')
     search_elem.send_keys(Keys.ENTER)
 
     try:
-        edition_elem = driver.find_element_by_partial_link_text('edition')
-        edition_elem.click()
+        driver.find_element_by_partial_link_text('edition').click()
     except NoSuchElementException:
         print("Failed to find book - Title or Author probably incorrect.")
         driver.close()
         exit()
 
+
+def goodreads_filter(driver, book_format):
+    """Filter editions with book_format and select top book."""
     pre_filter_url = driver.current_url
 
     # Filter by format
@@ -237,21 +297,15 @@ def goodreads_find(driver, book_info):
     )
 
     # Select top book
-    title_elem = driver.find_element_by_class_name('bookTitle')
-    title_elem.click()
+    driver.find_element_by_class_name('bookTitle').click()
 
     return driver.current_url
 
 
-def goodreads_update(driver, book_info):
-    """Review book on Goodreads, parse and return the book's 'Top Shelves'."""
-    date_done = book_info['date']
-    review = book_info['review']
-    rating = book_info['rating']
-
+def goodreads_read_box(driver, date_done, review):
+    """Mark book as read and write review box information."""
     # Mark as Read
-    menu_elem = driver.find_element_by_class_name('wtrShelfButton')
-    menu_elem.click()
+    driver.find_element_by_class_name('wtrShelfButton').click()
     search_elem = driver.find_element_by_class_name('wtrShelfSearchField')
     search_elem.click()
     search_elem.send_keys('read', Keys.ENTER)
@@ -264,6 +318,7 @@ def goodreads_update(driver, book_info):
     year_class = 'rereadDatePicker.smallPicker.endYear'
     month_class = 'rereadDatePicker.largePicker.endMonth'
     day_class = 'rereadDatePicker.smallPicker.endDay'
+
     Select(driver.find_element_by_class_name(year_class)
            ).select_by_visible_text(year)
 
@@ -280,9 +335,11 @@ def goodreads_update(driver, book_info):
         review_elem.send_keys(review)
 
     # Save
-    save_elem = driver.find_element_by_name('next')
-    save_elem.click()
+    driver.find_element_by_name('next').click()
 
+
+def goodreads_shelves_stars(driver, rating):
+    """Shelve book using 'Top Shelves', rate book and then return shelves."""
     # Shelf selection
     shelves_elems = driver.find_elements_by_class_name('actionLinkLite.'
                                                        'bookPageGenreLink')
@@ -323,45 +380,41 @@ def goodreads_update(driver, book_info):
     return shelves
 
 
-def parse_page(url, shelves_list):
-    """Parse and return page information needed for spreadsheet."""
+def parse_page(url):
+    """Parse page and return title, author and number of pages info dict."""
     info = {}
     res = requests.get(url)
     res.raise_for_status()
     soup = bs4.BeautifulSoup(res.text, 'html.parser')
 
     title_elem = soup.select('#bookTitle')
-
     rough_title = title_elem[0].getText().strip().split('\n')
     if len(rough_title) == 1:
-        title = rough_title[0].strip()
+        info['title'] = rough_title[0].strip()
     else:
-        title = rough_title[0].strip() + ' ' + rough_title[2].strip()
+        info['title'] = rough_title[0].strip() + ' ' + rough_title[2].strip()
 
-    info['title'] = title
-
-    author_elem = soup.select('.authorName')
-    author = author_elem[0].getText().strip()
-    info['author'] = author
+    info['author'] = soup.select('.authorName')[0].getText().strip()
 
     pages_elem = soup.findAll('span', attrs={'itemprop': 'numberOfPages'})
-    pages = int(pages_elem[0].getText().strip(' pages'))
-    info['pages'] = pages
-
-    if shelves_list[0] == 'Fiction' or shelves_list[0] == 'Nonfiction':
-        category = shelves_list[0]
-        genre = shelves_list[1]
-    else:
-        genre = shelves_list[0]
-        if 'Nonfiction' in shelves_list:
-            category = 'Nonfiction'
-        else:
-            category = 'Fiction'
-
-    info['category'] = category
-    info['genre'] = genre
+    info['pages'] = int(pages_elem[0].getText().strip(' pages'))
 
     return info
+
+
+def category_and_genre(shelves):
+    """Determine and return category and genre from Goodreads 'Top Shelves'."""
+    if 'Nonfiction' in shelves:
+        category = 'Nonfiction'
+    else:
+        category = 'Fiction'
+
+    for shelf in shelves:
+        if shelf != category:
+            genre = shelf
+            break
+
+    return (category, genre)
 
 
 def input_info(year_sheet, info, date):
@@ -376,7 +429,7 @@ def input_info(year_sheet, info, date):
     for sheet in [year_sheet, 'Overall']:
         sheet = wb[sheet]
 
-        input_row = first_blank(sheet)
+        input_row = first_blank_row(sheet)
 
         sheet.cell(row=input_row, column=1).value = info['title']
         sheet.cell(row=input_row, column=2).value = info['author']
@@ -388,22 +441,11 @@ def input_info(year_sheet, info, date):
     wb.save(path)
 
 
-def first_blank(sheet):
-    """Return the number of the first blank row of the given sheet."""
-    input_row = 1
-    data = ''
-    while data is not None:
-        data = sheet.cell(row=input_row, column=1).value
-        input_row += 1
-    input_row -= 1
-    return input_row
-
-
 def create_sheet(wb, last_sheet, sheet_name):
     """Create a new sheet by copying and modifying the latest one."""
     sheet = wb.copy_worksheet(wb[last_sheet])
     sheet.title = sheet_name
-    last_row = first_blank(sheet)
+    last_row = first_blank_row(sheet)
     while last_row > 1:
         for col in range(1, 7):
             sheet.cell(row=last_row, column=col).value = None
@@ -412,68 +454,15 @@ def create_sheet(wb, last_sheet, sheet_name):
     sheet.cell(row=5, column=9).value = day_tracker
 
 
-def write_config(email, password, prompt):
-    """Write configuration file."""
-    config = configparser.ConfigParser()
-    config.read('settings.ini')
-    config.set('User', 'Email', email)
-    config.set('User', 'Password', password)
-    config.set('Settings', 'Prompt', prompt)
-
-    with open('settings.ini', 'w') as configfile:
-        config.write(configfile)
-
-
-def get_setting(section, option):
-    """Return the value associated with option under section in settings"""
-    config = configparser.ConfigParser()
-    config.read('settings.ini')
-    value = config.get(section, option)
-
-    return value
-
-
-def user_info():
-    """Prompt for missing user info unless prompt is disabled."""
-    if not get_setting('User', 'Email'):
-        email = input('Email: ')
-    if not get_setting('User', 'Password'):
-        password = input('Password: ')
-        if get_setting('Settings', 'Prompt') == 'no':
-            return (email, password)
-
-        save = input("Save Password?(y/n): ")
-        if save.lower() == 'y':
-            write_config(email, password, 'yes')
-        elif save.lower() == 'n':
-            disable = input("Disable save Password prompt?(y/n): ")
-            if disable.lower() == 'y':
-                write_config(email, "", 'no')
-            else:
-                write_config(email, "", 'yes')
-
-
-def parse_arguments():
-    """Parse command line arguments and return a dictionary of their values."""
-    parser = argparse.ArgumentParser(description="Goodreads updater")
-    parser.add_argument('title', metavar="'title'",
-                        help="Book title enclosed within quotes")
-    parser.add_argument('author', metavar="'author'",
-                        help="Book author enclosed within quotes")
-    parser.add_argument('date', help=("(t)oday, (y)esterday or "
-                                      "date formatted DD/MM/YY"))
-    parser.add_argument('format', metavar='format',
-                        choices=['e', 'h', 'k', 'p'],
-                        help="(p)aperback, (h)ardcover, (k)indle, (e)book")
-    parser.add_argument('rating', type=int, metavar='rating',
-                        choices=[1, 2, 3, 4, 5],
-                        help="A number 1 through 5")
-    parser.add_argument('review', nargs='?', metavar="'review'",
-                        help="Review enclosed in quotes")
-
-    args = parser.parse_args()
-
-    return vars(args)
+def first_blank_row(sheet):
+    """Return the number of the first blank row of the given sheet."""
+    input_row = 1
+    data = ''
+    while data is not None:
+        data = sheet.cell(row=input_row, column=1).value
+        input_row += 1
+    input_row -= 1
+    return input_row
 
 
 def main():
@@ -515,14 +504,19 @@ def main():
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
     driver.implicitly_wait(20)
+
     goodreads_login(driver, email, password)
-    url = goodreads_find(driver, book_info)
-    shelves_list = goodreads_update(driver, book_info)
+    goodreads_find(driver, book_info['title'], book_info['author'])
+    url = goodreads_filter(driver, book_info['format'])
+    goodreads_read_box(driver, book_info['date'], book_info['review'])
+    shelves = goodreads_shelves_stars(driver, book_info['rating'])
+
     driver.close()
     print('Goodreads account updated.')
 
     print('Updating Spreadsheet...')
-    info = parse_page(url, shelves_list)
+    info = parse_page(url)
+    info['category'], info['genre'] = category_and_genre(shelves)
     year_sheet = '20' + book_info['date'][-2:]
     input_info(year_sheet, info, book_info['date'])
 
