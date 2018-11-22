@@ -23,17 +23,14 @@ driver = webdriver.Firefox()
 driver.implicitly_wait(10)
 
 ligrarian.goodreads_login(driver, email, password)
-url = ligrarian.goodreads_find(driver, book_info['title'], book_info['author'],
-                               book_info['format'])
+url = ligrarian.goodreads_find(driver, book_info)
 
 # Check book is correct format
 info_rows = driver.find_elements_by_class_name('row')
 row_text = [row.text for row in info_rows]
 assert 'Kindle' in ''.join(row_text), "Book is in incorrect format."
 
-shelves_list = ligrarian.goodreads_update(driver, book_info['date'],
-                                          book_info['review'],
-                                          book_info['rating'])
+shelves_list = ligrarian.goodreads_update(driver, book_info)
 
 undo_elem = driver.find_element_by_class_name('wtrStatusRead.wtrUnshelve')
 assert undo_elem, "Book wasn't marked as read."
@@ -59,17 +56,13 @@ year_sheet = '20' + book_info['date'][-2:]
 # Get first blank row before attempting to write
 pre_year = ligrarian.first_blank(wb[year_sheet])
 pre_overall = ligrarian.first_blank(wb['Overall'])
+wb.close()
 
 # Try to write info to both sheets
-ligrarian.input_info(wb, year_sheet, info['title'], info['author'],
-                     info['pages'], info['category'],
-                     info['genre'], book_info['date'])
-
-ligrarian.input_info(wb, 'Overall', info['title'], info['author'],
-                     info['pages'], info['category'],
-                     info['genre'], book_info['date'])
+ligrarian.input_info(year_sheet, info, book_info['date'])
 
 # Find blank rows now that the data should have been entered
+wb = openpyxl.load_workbook(path)
 post_year = ligrarian.first_blank(wb[year_sheet])
 post_overall = ligrarian.first_blank(wb['Overall'])
 
@@ -78,4 +71,20 @@ assert pre_year < post_year, "Data not written to year sheet."
 assert pre_overall < post_overall, "Data not written to overall sheet."
 print("Data was written to sheet successfully.")
 
+# Delete newly entered data
+for sheet in [year_sheet, 'Overall']:
+    sheet = wb[sheet]
+
+    input_row = ligrarian.first_blank(sheet) - 1
+
+    sheet.cell(row=input_row, column=1).value = ''
+    sheet.cell(row=input_row, column=2).value = ''
+    sheet.cell(row=input_row, column=3).value = ''
+    sheet.cell(row=input_row, column=4).value = ''
+    sheet.cell(row=input_row, column=5).value = ''
+    sheet.cell(row=input_row, column=6).value = ''
+
+wb.save(path)
+
+print("Spreadsheet reset.")
 print("Test run complete.")

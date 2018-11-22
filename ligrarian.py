@@ -204,8 +204,11 @@ def goodreads_login(driver, email, password):
         exit()
 
 
-def goodreads_find(driver, title, author, book_format):
+def goodreads_find(driver, book_info):
     """Find the book in the specified format on Goodreads and return URL."""
+    title = book_info['title']
+    author = book_info['author']
+    book_format = book_info['format']
 
     # Find correct book and edition
     search_elem = driver.find_element_by_class_name('searchBox__input')
@@ -240,8 +243,12 @@ def goodreads_find(driver, title, author, book_format):
     return driver.current_url
 
 
-def goodreads_update(driver, date_done, review, rating):
+def goodreads_update(driver, book_info):
     """Review book on Goodreads, parse and return the book's 'Top Shelves'."""
+    date_done = book_info['date']
+    review = book_info['review']
+    rating = book_info['rating']
+
     # Mark as Read
     menu_elem = driver.find_element_by_class_name('wtrShelfButton')
     menu_elem.click()
@@ -357,22 +364,28 @@ def parse_page(url, shelves_list):
     return info
 
 
-def input_info(wb, sheet_name, title, author, pages, category, genre, date):
+def input_info(year_sheet, info, date):
     """Write the book information to the first blank row on the given sheet."""
-    sheet_names = wb.sheetnames
-    if sheet_name not in sheet_names:
-        create_sheet(wb, sheet_names[-1], sheet_name)
+    path = get_setting('Settings', 'Path')
+    wb = openpyxl.load_workbook(path)
 
-    sheet = wb[sheet_name]
+    existing_sheets = wb.sheetnames
+    if year_sheet not in existing_sheets:
+        create_sheet(wb, existing_sheets[-1], year_sheet)
 
-    input_row = first_blank(sheet)
+    for sheet in [year_sheet, 'Overall']:
+        sheet = wb[sheet]
 
-    sheet.cell(row=input_row, column=1).value = title
-    sheet.cell(row=input_row, column=2).value = author
-    sheet.cell(row=input_row, column=3).value = pages
-    sheet.cell(row=input_row, column=4).value = category
-    sheet.cell(row=input_row, column=5).value = genre
-    sheet.cell(row=input_row, column=6).value = date
+        input_row = first_blank(sheet)
+
+        sheet.cell(row=input_row, column=1).value = info['title']
+        sheet.cell(row=input_row, column=2).value = info['author']
+        sheet.cell(row=input_row, column=3).value = info['pages']
+        sheet.cell(row=input_row, column=4).value = info['category']
+        sheet.cell(row=input_row, column=5).value = info['genre']
+        sheet.cell(row=input_row, column=6).value = date
+
+    wb.save(path)
 
 
 def first_blank(sheet):
@@ -502,30 +515,16 @@ def main():
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
     driver.implicitly_wait(20)
-
     goodreads_login(driver, email, password)
-    url = goodreads_find(driver, book_info['title'], book_info['author'],
-                         book_info['format'])
-
-    shelves_list = goodreads_update(driver, book_info['date'],
-                                    book_info['review'], book_info['rating'])
+    url = goodreads_find(driver, book_info)
+    shelves_list = goodreads_update(driver, book_info)
     driver.close()
     print('Goodreads account updated.')
 
-    path = get_setting('Settings', 'Path')
-    wb = openpyxl.load_workbook(path)
     print('Updating Spreadsheet...')
     info = parse_page(url, shelves_list)
-
     year_sheet = '20' + book_info['date'][-2:]
-
-    input_info(wb, year_sheet, info['title'], info['author'], info['pages'],
-               info['category'], info['genre'], book_info['date'])
-
-    input_info(wb, 'Overall', info['title'], info['author'], info['pages'],
-               info['category'], info['genre'], book_info['date'])
-
-    wb.save(path)
+    input_info(year_sheet, info, book_info['date'])
 
     print('Ligrarian has completed and will now close.')
 
