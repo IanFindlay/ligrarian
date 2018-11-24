@@ -256,8 +256,7 @@ def goodreads_login(driver, email, password):
 
     driver.find_element_by_name('user[email]').send_keys(email)
     pass_elem = driver.find_element_by_name('user[password]')
-    pass_elem.send_keys(password, )
-    pass_elem.send_keys(Keys.ENTER)
+    pass_elem.send_keys(password, Keys.ENTER)
 
     try:
         driver.find_element_by_class_name('siteHeader__personal')
@@ -270,8 +269,7 @@ def goodreads_login(driver, email, password):
 def goodreads_find(driver, title, author):
     """Find the book on Goodreads and navigate to all editions page."""
     search_elem = driver.find_element_by_class_name('searchBox__input')
-    search_elem.send_keys(title + ' ' + author + '%3Dauthor')
-    search_elem.send_keys(Keys.ENTER)
+    search_elem.send_keys(title + ' ' + author + '%3Dauthor', Keys.ENTER)
 
     try:
         driver.find_element_by_partial_link_text('edition').click()
@@ -288,8 +286,7 @@ def goodreads_filter(driver, book_format):
     # Filter by format
     filter_elem = driver.find_element_by_name('filter_by_format')
     filter_elem.click()
-    filter_elem.send_keys(book_format)
-    filter_elem.send_keys(Keys.ENTER)
+    filter_elem.send_keys(book_format, Keys.ENTER)
 
     # Make sure filtered page is loaded before clicking top book
     WebDriverWait(driver, 10).until(
@@ -340,7 +337,6 @@ def goodreads_read_box(driver, date_done, review):
 
 def goodreads_shelves_stars(driver, rating):
     """Shelve book using 'Top Shelves', rate book and then return shelves."""
-    # Shelf selection
     shelves_elems = driver.find_elements_by_class_name('actionLinkLite.'
                                                        'bookPageGenreLink')
     shelves = []
@@ -356,6 +352,7 @@ def goodreads_shelves_stars(driver, rating):
         EC.invisibility_of_element_located((By.ID, "box"))
     )
 
+    # Select shelves
     menu_elem = driver.find_element_by_class_name('wtrShelfButton')
     menu_elem.click()
     shelf_elem = driver.find_element_by_class_name('wtrShelfSearchField')
