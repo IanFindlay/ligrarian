@@ -7,6 +7,10 @@ from datetime import datetime as dt
 import openpyxl
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait
+import time
 
 import ligrarian
 
@@ -33,6 +37,14 @@ assert 'Kindle' in ''.join(row_text), "Book is in incorrect format."
 
 ligrarian.goodreads_read_box(driver, book_info['date'], book_info['review'])
 shelves = ligrarian.goodreads_shelves_stars(driver, book_info['rating'])
+
+time.sleep(3)
+
+# Re-Read via edit URL
+ligrarian.goodreads_reread(driver, book_info['date'], book_info['review'])
+
+# Reset Goodreads account
+driver.get(url)
 
 undo_elem = driver.find_element_by_class_name('wtrStatusRead.wtrUnshelve')
 assert undo_elem, "Book wasn't marked as read."
