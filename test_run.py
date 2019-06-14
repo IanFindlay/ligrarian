@@ -3,6 +3,7 @@
 """Do a test run of the Ligrarian that resets everything afterwards."""
 
 from datetime import datetime as dt
+from datetime import timedelta
 
 import openpyxl
 from selenium import webdriver
@@ -17,9 +18,10 @@ import ligrarian
 
 email = ligrarian.get_setting('User', 'Email')
 password = ligrarian.get_setting('User', 'Password')
+yesterday = dt.strftime(dt.now() - timedelta(1), '%d/%m/%y')
 today = dt.strftime(dt.now(), '%d/%m/%y')
 book_info = {
-    'title': 'Cannery Row', 'author': 'John Steinbeck', 'date': today,
+    'title': 'Cannery Row', 'author': 'John Steinbeck', 'date': yesterday,
     'format': 'kindle', 'rating': '4',  'review': 'Test Review',
 }
 
@@ -36,9 +38,13 @@ row_text = [row.text for row in info_rows]
 assert 'Kindle' in ''.join(row_text), "Book is in incorrect format."
 
 ligrarian.goodreads_read_box(driver, book_info['date'], book_info['review'])
-shelves = ligrarian.goodreads_shelves_stars(driver, book_info['rating'])
+shelves = ligrarian.goodreads_get_shelves(driver, book_info['rating'])
+ligrarian.goodreads_shelf_and_rate(driver, shelves, book_info['rating'])
 
 time.sleep(3)
+
+# Change date for reread
+book_info['date'] = today
 
 # Re-Read via edit URL
 ligrarian.goodreads_reread(driver, book_info['date'], book_info['review'])

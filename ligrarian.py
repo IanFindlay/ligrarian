@@ -22,7 +22,6 @@ from datetime import datetime as dt
 from datetime import timedelta
 import sys
 import tkinter as tk
-import tkinter.messagebox
 
 import bs4
 import openpyxl
@@ -237,6 +236,8 @@ def user_info():
             else:
                 write_config(email, "", 'yes')
 
+    return (email, password)
+
 
 def write_config(email, password, prompt):
     """Write configuration file."""
@@ -303,9 +304,7 @@ def goodreads_reread(driver, date_done, review):
     """Add new Reread date to previously read book."""
     book_url = driver.current_url.split('/')[-1]
     driver.get("https://www.goodreads.com/review/edit/{}".format(book_url))
-
-    reread_elem = driver.find_element_by_id('readingSessionAddLink')
-    reread_elem.click()
+    driver.find_element_by_id('readingSessionAddLink').click()
 
     # More details loaded for Explicit Wait
     driver.find_element_by_class_name('smallLink.closed').click()
@@ -313,16 +312,15 @@ def goodreads_reread(driver, date_done, review):
     WebDriverWait(driver, 10).until(
         EC.visibility_of_element_located((By.ID, "review_recommendation"))
     )
-    
+
     # Find reading session codes from all ids then use last one for date entry
-    ids_elems = driver.find_elements_by_xpath('//*[@id]')
     reread_codes = []
-    for id_elem in ids_elems:
+    for id_elem in driver.find_elements_by_xpath('//*[@id]'):
         id_attribute = id_elem.get_attribute('id')
         if 'readingSessionEntry' in id_attribute:
             reread_codes.append(id_attribute)
-    new_read_code = reread_codes[-1].lstrip('readingSessionEntry')
-    
+    new_read_code = reread_codes[-1][19:]
+
     # Date Selection
     year, month, day = goodreads_date_format(date_done)
 
@@ -340,13 +338,12 @@ def goodreads_reread(driver, date_done, review):
            ).select_by_visible_text(day)
 
     # Write review if one entered - Will overwrite any pre-existing review
-    # TODO Add check and confirmation here?
     if review:
         review_elem = driver.find_element_by_name('review[review]')
         review_elem.clear()
         review_elem.click()
         review_elem.send_keys(review)
-    
+
     driver.find_element_by_name('next').click()
 
 
@@ -393,8 +390,8 @@ def goodreads_date_format(date_done):
     return (year, month, day)
 
 
-def goodreads_shelves_stars(driver, rating):
-    """Shelve book using 'Top Shelves', rate book and then return shelves."""
+def goodreads_get_shelves(driver, rating):
+    """Find and return list of 'Top Shelves' on Goodreads book page."""
     shelves_elems = driver.find_elements_by_class_name('actionLinkLite.'
                                                        'bookPageGenreLink')
     shelves = []
@@ -405,6 +402,11 @@ def goodreads_shelves_stars(driver, rating):
     if rating == '5':
         shelves.append('5-star-books')
 
+    return shelves
+
+
+def goodreads_shelf_and_rate(driver, shelves, rating):
+    """Shelve book using 'Top Shelves', rate book and then return shelves."""
     # Wait until review box is invisible
     WebDriverWait(driver, 10).until(
         EC.invisibility_of_element_located((By.ID, "box"))
@@ -415,8 +417,8 @@ def goodreads_shelves_stars(driver, rating):
     menu_elem.click()
     shelf_elem = driver.find_element_by_class_name('wtrShelfSearchField')
 
-    for i in range(len(shelves)):
-        shelf_elem.send_keys(shelves[i], Keys.ENTER)
+    for shelf in shelves:
+        shelf_elem.send_keys(shelf, Keys.ENTER)
         shelf_elem.send_keys(Keys.SHIFT, Keys.HOME, Keys.DELETE)
 
     # Close dropdown and wait until it disappears
@@ -431,8 +433,6 @@ def goodreads_shelves_stars(driver, rating):
         if stars.text.strip() == '{} of 5 stars'.format(rating):
             stars.click()
             break
-
-    return shelves
 
 
 def parse_page(url):
@@ -475,14 +475,14 @@ def category_and_genre(shelves):
 def input_info(year_sheet, info, date):
     """Write the book information to the first blank row on the given sheet."""
     path = get_setting('Settings', 'Path')
-    wb = openpyxl.load_workbook(path)
+    workbook = openpyxl.load_workbook(path)
 
-    existing_sheets = wb.sheetnames
+    existing_sheets = workbook.sheetnames
     if year_sheet not in existing_sheets:
-        create_sheet(wb, existing_sheets[-1], year_sheet)
+        create_sheet(workbook, existing_sheets[-1], year_sheet)
 
     for sheet in [year_sheet, 'Overall']:
-        sheet = wb[sheet]
+        sheet = workbook[sheet]
 
         input_row = first_blank_row(sheet)
 
@@ -493,12 +493,12 @@ def input_info(year_sheet, info, date):
         sheet.cell(row=input_row, column=5).value = info['genre']
         sheet.cell(row=input_row, column=6).value = date
 
-    wb.save(path)
+    workbook.save(path)
 
 
-def create_sheet(wb, last_sheet, sheet_name):
+def create_sheet(workbook, last_sheet, sheet_name):
     """Create a new sheet by copying and modifying the latest one."""
-    sheet = wb.copy_worksheet(wb[last_sheet])
+    sheet = workbook.copy_worksheet(workbook[last_sheet])
     sheet.title = sheet_name
     last_row = first_blank_row(sheet)
     while last_row > 1:
@@ -529,7 +529,7 @@ def main():
 
     # Bypass GUI and process command line arguments if given
     if len(sys.argv) > 1:
-        user_info()
+        email, password = user_info()
         book_info = parse_arguments()
 
         # Process date if given as (t)oday or (y)esterday into proper format
@@ -546,7 +546,7 @@ def main():
         book_info = {
             'title': gui.book_title, 'author': gui.book_author,
             'date': gui.book_date, 'format': gui.book_format,
-            'rating': gui.book_rating,  'review': gui.book_review,
+            'rating': gui.book_rating, 'review': gui.book_review,
         }
         email = gui.email
         password = gui.password
@@ -558,14 +558,21 @@ def main():
 
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
-    driver.implicitly_wait(20)
+    driver.implicitly_wait(10)
 
     goodreads_login(driver, email, password)
     goodreads_find(driver, book_info['title'], book_info['author'])
     url = goodreads_filter(driver, book_info['format'])
-    # TODO Automatic detecting of if book has been read before or not
-    goodreads_read_box(driver, book_info['date'], book_info['review'])
-    shelves = goodreads_shelves_stars(driver, book_info['rating'])
+    shelves = goodreads_get_shelves(driver, book_info['rating'])
+
+    # Use rating element to see if book has been read before
+    rating_elem = driver.find_element_by_class_name('stars')
+    current_rating = rating_elem.get_attribute('data-rating')
+    if current_rating == '0':
+        goodreads_read_box(driver, book_info['date'], book_info['review'])
+        goodreads_shelf_and_rate(driver, shelves, book_info['rating'])
+    else:
+        goodreads_reread(driver, book_info['date'], book_info['review'])
 
     driver.close()
     print('Goodreads account updated.')
