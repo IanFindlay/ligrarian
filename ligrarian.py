@@ -300,96 +300,6 @@ def goodreads_filter(driver, book_format):
     return driver.current_url
 
 
-def goodreads_reread(driver, date_done, review):
-    """Add new Reread date to previously read book."""
-    book_url = driver.current_url.split('/')[-1]
-    driver.get("https://www.goodreads.com/review/edit/{}".format(book_url))
-    driver.find_element_by_id('readingSessionAddLink').click()
-
-    # More details loaded for Explicit Wait
-    driver.find_element_by_class_name('smallLink.closed').click()
-
-    WebDriverWait(driver, 10).until(
-        EC.visibility_of_element_located((By.ID, "review_recommendation"))
-    )
-
-    # Find reading session codes from all ids then use last one for date entry
-    reread_codes = []
-    for id_elem in driver.find_elements_by_xpath('//*[@id]'):
-        id_attribute = id_elem.get_attribute('id')
-        if 'readingSessionEntry' in id_attribute:
-            reread_codes.append(id_attribute)
-    new_read_code = reread_codes[-1][19:]
-
-    # Date Selection
-    year, month, day = goodreads_date_format(date_done)
-
-    year_name = 'readingSessionDatePicker{}[end][year]'.format(new_read_code)
-    month_name = 'readingSessionDatePicker{}[end][month]'.format(new_read_code)
-    day_name = 'readingSessionDatePicker{}[end][day]'.format(new_read_code)
-
-    Select(driver.find_element_by_name(year_name)
-           ).select_by_visible_text(year)
-
-    Select(driver.find_element_by_name(month_name)
-           ).select_by_value(month)
-
-    Select(driver.find_element_by_name(day_name)
-           ).select_by_visible_text(day)
-
-    # Write review if one entered - Will overwrite any pre-existing review
-    if review:
-        review_elem = driver.find_element_by_name('review[review]')
-        review_elem.clear()
-        review_elem.click()
-        review_elem.send_keys(review)
-
-    driver.find_element_by_name('next').click()
-
-
-def goodreads_read_box(driver, date_done, review):
-    """Mark book as read and write review box information."""
-    # Mark as Read
-    driver.find_element_by_class_name('wtrShelfButton').click()
-    search_elem = driver.find_element_by_class_name('wtrShelfSearchField')
-    search_elem.click()
-    search_elem.send_keys('read', Keys.ENTER)
-
-    # Date Selection
-    year, month, day = goodreads_date_format(date_done)
-
-    year_class = 'rereadDatePicker.smallPicker.endYear'
-    month_class = 'rereadDatePicker.largePicker.endMonth'
-    day_class = 'rereadDatePicker.smallPicker.endDay'
-
-    Select(driver.find_element_by_class_name(year_class)
-           ).select_by_visible_text(year)
-
-    Select(driver.find_element_by_class_name(month_class)
-           ).select_by_value(month)
-
-    Select(driver.find_element_by_class_name(day_class)
-           ).select_by_visible_text(day)
-
-    # Write review if one entered
-    if review:
-        review_elem = driver.find_element_by_name('review[review]')
-        review_elem.click()
-        review_elem.send_keys(review)
-
-    # Save
-    driver.find_element_by_name('next').click()
-
-
-def goodreads_date_format(date_done):
-    """Format date for entry into Goodreads dropdown select boxes."""
-    year = '20' + date_done[6:]
-    month = date_done[3:5].lstrip('0')
-    day = date_done[:2].lstrip('0')
-
-    return (year, month, day)
-
-
 def goodreads_get_shelves(driver, rating):
     """Find and return list of 'Top Shelves' on Goodreads book page."""
     shelves_elems = driver.find_elements_by_class_name('actionLinkLite.'
@@ -405,8 +315,68 @@ def goodreads_get_shelves(driver, rating):
     return shelves
 
 
-def goodreads_shelf_and_rate(driver, shelves, rating):
-    """Shelve book using 'Top Shelves', rate book and then return shelves."""
+def goodreads_date_input(driver, date_done, reread=False):
+    """Select completion date on review page, add new selectors for rereads."""
+    book_url = driver.current_url.split('/')[-1]
+    driver.get("https://www.goodreads.com/review/edit/{}".format(book_url))
+
+    # If it's a reread need to create new session selectors
+    if reread:
+        driver.find_element_by_id('readingSessionAddLink').click()
+        # More details loaded for Explicit Wait
+        driver.find_element_by_class_name('smallLink.closed').click()
+        WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.ID, "review_recommendation"))
+        )
+
+    # Find reading session codes from all ids then use last one for date entry
+    reread_codes = []
+    for id_elem in driver.find_elements_by_xpath('//*[@id]'):
+        id_attribute = id_elem.get_attribute('id')
+        if 'readingSessionEntry' in id_attribute:
+            reread_codes.append(id_attribute)
+    new_read_code = reread_codes[-1][19:]
+
+    # Date Formatting and Selection
+    year = '20' + date_done[6:]
+    month = date_done[3:5].lstrip('0')
+    day = date_done[:2].lstrip('0')
+
+    year_name = 'readingSessionDatePicker{}[end][year]'.format(new_read_code)
+    month_name = 'readingSessionDatePicker{}[end][month]'.format(new_read_code)
+    day_name = 'readingSessionDatePicker{}[end][day]'.format(new_read_code)
+
+    Select(driver.find_element_by_name(year_name)
+           ).select_by_visible_text(year)
+
+    Select(driver.find_element_by_name(month_name)
+           ).select_by_value(month)
+
+    Select(driver.find_element_by_name(day_name)
+           ).select_by_visible_text(day)
+
+
+def goodreads_add_review(driver, review):
+    """Write review in review box (if given)"""
+    if review:
+        review_elem = driver.find_element_by_name('review[review]')
+        review_elem.clear()
+        review_elem.click()
+        review_elem.send_keys(review)
+
+
+def goodreads_rate_book(driver, rating):
+    """Give the book the given rating out of 5."""
+    # Give star rating
+    stars_elem = driver.find_elements_by_class_name('star.off')
+    for stars in stars_elem:
+        if stars.text.strip() == '{} of 5 stars'.format(rating):
+            stars.click()
+            break
+
+
+def goodreads_shelve(driver, shelves):
+    """Shelve book using 'Top Shelves'."""
     # Wait until review box is invisible
     WebDriverWait(driver, 10).until(
         EC.invisibility_of_element_located((By.ID, "box"))
@@ -426,13 +396,6 @@ def goodreads_shelf_and_rate(driver, shelves, rating):
     WebDriverWait(driver, 10).until(
         EC.invisibility_of_element_located((By.CLASS_NAME, "wtrShelfList"))
     )
-
-    # Give star rating
-    stars_elem = driver.find_elements_by_class_name('star.off')
-    for stars in stars_elem:
-        if stars.text.strip() == '{} of 5 stars'.format(rating):
-            stars.click()
-            break
 
 
 def parse_page(url):
@@ -532,7 +495,7 @@ def main():
         email, password = user_info()
         book_info = parse_arguments()
 
-        # Process date if given as (t)oday or (y)esterday into proper format
+        # Process date if given as (t)oday or (y)eGsterday into proper format
         if book_info['date'].lower() == 't':
             book_info['date'] = today
         elif book_info['date'].lower() == 'y':
@@ -569,10 +532,15 @@ def main():
     rating_elem = driver.find_element_by_class_name('stars')
     current_rating = rating_elem.get_attribute('data-rating')
     if current_rating == '0':
-        goodreads_read_box(driver, book_info['date'], book_info['review'])
-        goodreads_shelf_and_rate(driver, shelves, book_info['rating'])
-    else:
-        goodreads_reread(driver, book_info['date'], book_info['review'])
+        reread = False
+    goodreads_date_input(driver, book_info['date'], reread)
+    goodreads_add_review(driver, book_info['review'])
+    driver.find_element_by_name('next').click()
+    # Return to main book page
+    driver.get(url)
+    goodreads_rate_book(driver, book_info['rating'])
+    if not reread:
+        goodreads_shelve(driver, shelves,)
 
     driver.close()
     print('Goodreads account updated.')
