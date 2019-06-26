@@ -38,11 +38,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 class GuiInput():
     """Ligrarian GUI layout and related methods."""
 
-    def __init__(self, master, email, password, today, yesterday):
-        self.email = email
-        self.password = password
+    def __init__(self, master, today, yesterday):
         self.today = today
         self.yesterday = yesterday
+        self.email = get_setting('User', 'Email')
+        self.password = get_setting('User', 'Password')
 
         self.master = master
         self.master.title("Ligrarian")
@@ -487,8 +487,6 @@ def main():
     """Coordinate Updating of Goodreads account and writing to spreasheet."""
     today = dt.strftime(dt.now(), '%d/%m/%y')
     yesterday = dt.strftime(dt.now() - timedelta(1), '%d/%m/%y')
-    email = get_setting('User', 'Email')
-    password = get_setting('User', 'Password')
 
     # Bypass GUI and process command line arguments if given
     if len(sys.argv) > 1:
@@ -504,7 +502,7 @@ def main():
     else:
         root = tk.Tk()
         root.protocol("WM_DELETE_WINDOW", exit)
-        gui = GuiInput(root, email, password, today, yesterday)
+        gui = GuiInput(root, today, yesterday)
         root.mainloop()
         book_info = {
             'title': gui.book_title, 'author': gui.book_author,
@@ -531,8 +529,8 @@ def main():
     # Use rating element to see if book has been read before
     rating_elem = driver.find_element_by_class_name('stars')
     current_rating = rating_elem.get_attribute('data-rating')
-    if current_rating == '0':
-        reread = False
+    if current_rating != '0':
+        reread = True
     goodreads_date_input(driver, book_info['date'], reread)
     goodreads_add_review(driver, book_info['review'])
     driver.find_element_by_name('next').click()
@@ -540,7 +538,7 @@ def main():
     driver.get(url)
     goodreads_rate_book(driver, book_info['rating'])
     if not reread:
-        goodreads_shelve(driver, shelves,)
+        goodreads_shelve(driver, shelves)
 
     driver.close()
     print('Goodreads account updated.')

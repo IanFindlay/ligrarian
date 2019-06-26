@@ -1,11 +1,11 @@
 # Ligrarian
 
-A Goodreads librarian - Automates marking a book as read on [Goodreads](https://www.goodreads.com/) and stores book information on a local spreadsheet.
+A Goodreads librarian - Automates marking a book as read (or reread) on [Goodreads](https://www.goodreads.com/) and stores book information on a local spreadsheet.
 
 
   * Automatically logs in and updates your Goodreads account by doing the following:  
 
-    * **Finds the book in the Format specified and marks it as read**
+    * **Finds the book in the Format specified and marks it as read/adds a reread date to it**
     * **Sets the Date Finshed to user specified date**
     * **Sets the book's Rating to user specified value**
     * **Inputs Review if one is given**
