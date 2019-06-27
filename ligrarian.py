@@ -531,8 +531,7 @@ def main():
     # Use rating element to see if book has been read before
     rating_elem = driver.find_element_by_class_name('stars')
     current_rating = rating_elem.get_attribute('data-rating')
-    if current_rating != '0':
-        reread = True
+    reread = current_rating != '0'
     goodreads_date_input(driver, book_info['date'], reread)
     goodreads_add_review(driver, book_info['review'])
     driver.find_element_by_name('next').click()
@@ -551,7 +550,10 @@ def main():
     year_sheet = '20' + book_info['date'][-2:]
     input_info(year_sheet, info, book_info['date'])
 
-    print('Ligrarian has completed and will now close.')
+    print(('Ligrarian has completed and will now close. The following '
+           'information has been written to the spreadsheet:'))
+    print(info['title'], info['author'], info['pages'],
+          info['category'], info['genre'], book_info['date'], sep=', ')
 
 
 if __name__ == '__main__':
