@@ -22,6 +22,7 @@ from datetime import datetime as dt
 from datetime import timedelta
 import sys
 import tkinter as tk
+from tkinter import messagebox
 
 import bs4
 import openpyxl
@@ -41,15 +42,17 @@ class GuiInput():
     def __init__(self, master, today, yesterday):
         self.today = today
         self.yesterday = yesterday
+
+        # Variables of the information to be entered
         self.email = get_setting('User', 'Email')
         self.password = get_setting('User', 'Password')
+        self.gui_book_info = {}
+        self.save_choice = None
 
+        # GUI Structure
         self.master = master
         self.master.title("Ligrarian")
-        self.width = 665
-        self.height = 560
-        self.geometry_string = "{}x{}".format(self.width, self.height)
-        self.master.geometry(self.geometry_string)
+        self.master.geometry('665x560')
 
         # Labels
         self.login_label = tk.Label(self.master, text="Login")
@@ -155,34 +158,36 @@ class GuiInput():
         self.date.insert(0, self.yesterday)
 
     def parse_input(self):
-        """Create and verify the book details inputted to the GUI."""
+        """Create input dictionary and test if required info has been given."""
         self.email = self.login_email.get()
-        self.save = self.save.get()
 
         password = self.login_password.get()
         if password != '********':
             self.password = password
 
-        self.book_title = self.title.get()
-        self.book_author = self.author.get()
-        self.book_format = self.book_format.get()
-        self.book_rating = self.star.get()
-        self.book_date = self.date.get()
-        self.book_review = self.review.get('1.0', 'end-1c')
+        self.save_choice = self.save.get()
 
+        self.gui_book_info = {
+            'title': self.title.get(), 'author': self.author.get(),
+            'date': self.date.get(), 'format': self.book_format.get(),
+            'rating': self.star.get(),
+            'review': self.review.get('1.0', 'end-1c'),
+        }
+
+        # Check all information has been entered
         try:
             assert self.email != 'Email'
             assert self.password != 'Password'
-            assert self.book_title
-            assert self.book_author
-            assert self.book_format
-            assert self.book_rating
-            assert self.book_date != 'DD/MM/YY'
+            assert self.gui_book_info['title']
+            assert self.gui_book_info['author']
+            assert self.gui_book_info['format']
+            assert self.gui_book_info['rating']
+            assert self.gui_book_info['date'] != 'DD/MM/YY'
             self.master.destroy()
 
         except AssertionError:
-            tk.messagebox.showwarning(message="Complete all non-optional "
-                                      "fields before marking as read.")
+            messagebox.showwarning(message="Complete all non-optional "
+                                   "fields before marking as read.")
 
 
 def parse_arguments():
@@ -504,15 +509,12 @@ def main():
         root.protocol("WM_DELETE_WINDOW", exit)
         gui = GuiInput(root, today, yesterday)
         root.mainloop()
-        book_info = {
-            'title': gui.book_title, 'author': gui.book_author,
-            'date': gui.book_date, 'format': gui.book_format,
-            'rating': gui.book_rating, 'review': gui.book_review,
-        }
+
+        book_info = gui.gui_book_info
         email = gui.email
         password = gui.password
 
-        if gui.save:
+        if gui.save_choice:
             write_config(email, password, 'no')
         else:
             write_config(email, "", 'yes')
