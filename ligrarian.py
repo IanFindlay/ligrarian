@@ -224,9 +224,11 @@ def get_setting(section, option):
 
 def user_info():
     """Prompt for missing user info unless prompt is disabled."""
-    if not get_setting('User', 'Email'):
+    email = get_setting('User', 'Email')
+    if not email:
         email = input('Email: ')
-    if not get_setting('User', 'Password'):
+    password = get_setting('User', 'Password')
+    if not password:
         password = input('Password: ')
         if get_setting('Settings', 'Prompt') == 'no':
             return (email, password)
