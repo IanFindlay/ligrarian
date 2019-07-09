@@ -555,7 +555,7 @@ def main():
     print(('Ligrarian has completed and will now close. The following '
            'information has been written to the spreadsheet:'))
     print(info['title'], info['author'], info['pages'],
-          info['category'], info['genre'], book_info['date'], sep=', ')
+          info['category'], info['genre'], book_info['date'], sep='\n')
 
 
 if __name__ == '__main__':
