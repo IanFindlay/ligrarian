@@ -277,7 +277,7 @@ def goodreads_login(driver, email, password):
 def goodreads_find(driver, title, author):
     """Find the book on Goodreads and navigate to all editions page."""
     search_elem = driver.find_element_by_class_name('searchBox__input')
-    search_elem.send_keys(title + ' ' + author + '%3Dauthor', Keys.ENTER)
+    search_elem.send_keys(title + ' ' + author, Keys.ENTER)
 
     try:
         driver.find_element_by_partial_link_text('edition').click()
