@@ -191,26 +191,38 @@ class GuiInput():
 
 
 def parse_arguments():
-    """Parse command line arguments and return a dictionary of their values."""
+    """Parse command line arguments and return dictionary of values."""
     parser = argparse.ArgumentParser(description="Goodreads updater")
-    parser.add_argument('title', metavar="'title'",
-                        help="Book title enclosed within quotes")
-    parser.add_argument('author', metavar="'author'",
-                        help="Book author enclosed within quotes")
-    parser.add_argument('date', help=("(t)oday, (y)esterday or "
-                                      "date formatted DD/MM/YY"))
-    parser.add_argument('format', metavar='format',
-                        choices=['e', 'h', 'k', 'p'],
-                        help="(p)aperback, (h)ardcover, (k)indle, (e)book")
-    parser.add_argument('rating', type=int, metavar='rating',
-                        choices=[1, 2, 3, 4, 5],
-                        help="A number 1 through 5")
-    parser.add_argument('review', nargs='?', metavar="'review'",
-                        help="Review enclosed in quotes")
+    subparser = parser.add_subparsers(help="Choose between url or search")
+
+    url_parser = subparser.add_parser("url")
+    url_parser.add_argument('url', metavar="url",
+                            help="'Book's Goodreads URL within quotes'")
+    url_parser.add_argument('date', help=("(t)oday, (y)esterday or "
+                                          "date formatted DD/MM/YY"))
+    url_parser.add_argument('rating', type=int, metavar='rating',
+                            choices=[1, 2, 3, 4, 5],
+                            help="A number 1 through 5")
+    url_parser.add_argument('review', nargs='?', metavar="'review'",
+                            help="Review enclosed in quotes")
+
+    search_parser = subparser.add_parser("search")
+    search_parser.add_argument('terms', metavar="'terms'",
+                                help="Search terms to use (Book title/Author")
+    search_parser.add_argument('format', metavar="'format'",
+                               choices=['e', 'h', 'k', 'p'],
+                               help="(p)aperback, (h)ardcover, "
+                                    "(k)indle, (e)book")
+    search_parser.add_argument('date', help=("(t)oday, (y)esterday or "
+                                             "date formatted DD/MM/YY"))
+    search_parser.add_argument('rating', type=int, metavar='rating',
+                               choices=[1, 2, 3, 4, 5],
+                               help="A number 1 through 5")
+    search_parser.add_argument('review', nargs='?', metavar="'review'",
+                               help="Review enclosed in quotes")
 
     args = parser.parse_args()
-
-    return vars(args)
+    return (vars(args))
 
 
 def get_setting(section, option):
@@ -274,10 +286,10 @@ def goodreads_login(driver, email, password):
         exit()
 
 
-def goodreads_find(driver, title, author):
+def goodreads_find(driver, terms):
     """Find the book on Goodreads and navigate to all editions page."""
     search_elem = driver.find_element_by_class_name('searchBox__input')
-    search_elem.send_keys(title + ' ' + author, Keys.ENTER)
+    search_elem.send_keys(terms, Keys.ENTER)
 
     try:
         driver.find_element_by_partial_link_text('edition').click()
@@ -500,7 +512,7 @@ def main():
         email, password = user_info()
         book_info = parse_arguments()
 
-        # Process date if given as (t)oday or (y)eGsterday into proper format
+        # Process date if given as (t)oday or (y)esterday into proper format
         if book_info['date'].lower() == 't':
             book_info['date'] = today
         elif book_info['date'].lower() == 'y':
@@ -526,8 +538,14 @@ def main():
     driver.implicitly_wait(10)
 
     goodreads_login(driver, email, password)
-    goodreads_find(driver, book_info['title'], book_info['author'])
-    url = goodreads_filter(driver, book_info['format'])
+
+    if 'terms' in book_info:
+        goodreads_find(driver, book_info['terms'])
+        url = goodreads_filter(driver, book_info['format'])
+    else:
+        url = book_info['url']
+        driver.get(url)
+
     shelves = goodreads_get_shelves(driver, book_info['rating'])
 
     # Use rating element to see if book has been read before
