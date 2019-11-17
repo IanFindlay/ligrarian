@@ -5,15 +5,21 @@
 Without arguments ligrarian.py loads a GUI. This can be bypassed via arguments
 
 Args:
-    Title of Book: Enclosed in double quotation marks
-    Author of Book: Enclosed in double quotation marks
-    Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YY
-    Format: (p)aperback, (h)ardcover, (k)indle or (e)book
-    Rating: Number between 1 and 5
+    Two operational modes url or search
 
-Optional Args:
-    Review (Optional): Enclosed in double quotation marks
+    url arguments:
+        URL: Goodreads URL for the book
+        Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YY
+        Rating: Number between 1 and 5
+        Review (Optional): Enclosed in double quotation marks
 
+    search arguments:
+        Title of Book: Enclosed in double quotation marks
+        Author of Book: Enclosed in double quotation marks
+        Format: (p)aperback, (h)ardcover, (k)indle or (e)book
+        Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YY
+        Rating: Number between 1 and 5
+        Review (Optional): Enclosed in double quotation marks
 """
 
 import argparse
@@ -197,7 +203,7 @@ def parse_arguments():
 
     url_parser = subparser.add_parser("url")
     url_parser.add_argument('url', metavar="url",
-                            help="'Book's Goodreads URL within quotes'")
+                            help="Book's Goodreads URL within quotes")
     url_parser.add_argument('date', help=("(t)oday, (y)esterday or "
                                           "date formatted DD/MM/YY"))
     url_parser.add_argument('rating', type=int, metavar='rating',
@@ -208,7 +214,8 @@ def parse_arguments():
 
     search_parser = subparser.add_parser("search")
     search_parser.add_argument('terms', metavar="'terms'",
-                                help="Search terms to use (Book title/Author")
+                                help="Search terms to use e.g. Book title "
+                                     "and Author")
     search_parser.add_argument('format', metavar="'format'",
                                choices=['e', 'h', 'k', 'p'],
                                help="(p)aperback, (h)ardcover, "
