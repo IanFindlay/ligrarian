@@ -41,11 +41,22 @@ To get started using Ligrarian, download the directory and place it wherever you
 
 Running ligrarian.py through Python 3 will load the GUI. Simply fill out all of the non-optional fields and press 'Mark as Read'. The GUI window will close, an automated Firefox session will begin and your account and the spreadsheet will soon be updated.
 
-Your Email is saved to the config.ini file in the same directory, so you won't have to enter it every time, and your Password can be saved by checking the 'Save Password' box at the end of the first row of the GUI. Ocen saved, your Password will appear as '********' in future GUI sessions.
+Your Email is saved to the config.ini file in the same directory, so you won't have to enter it every time, and your Password can be saved by checking the 'Save Password' box at the end of the first row of the GUI. Ocen saved, your Password will appear as asterixs in future GUI sessions.
 
 This GUI can be bypassed through the use of command line arguments. You will be prompted for your Email and Password if they are not saved, asked if you would like to save your Password and finally, if you opt not to save it, asked if you would like the Save Password prompt itself to be disabled. These settings, and others including the path to the Spreadsheet and the Defaults for some of the GUI fields, can be directly altered within the settings.ini file.
 
-The format and order for the command line arguments are as follows:
+There are two ways to direct Ligrarian to the correct book page on Goodreads either through the page's URL (url mode) or through the website's search (search mode).
+
+Arguments for url mode are positional and in the order:
+URL Date Rating ["Review"] e.g.
+
+```
+python3 ligrarian.py https://Goodreads.com/ExampleBookUrl t 4
+```
+Would mark the book at the given URL as having been read today and would rate it 4 stars.
+
+Arguments for search mode are positional and in the order:
+"Search Terms" Format Date Rating ["Review"] e.g.
 
 ```
 python3 ligrarian.py "East of Eden" "John Steinbeck" t k 5 "Insert review here"
@@ -53,8 +64,8 @@ python3 ligrarian.py "East of Eden" "John Steinbeck" t k 5 "Insert review here"
 The above would update your Goodreads account as having finished reading East of Eden by John Steinbeck on today's date, in Kindle format, rating it 5 stars and leaving "Insert review here" as a review for the book
 
 ### Note that:
-* Both the Book Title and Author Name are enclosed in quotes
-* The date can be (t)oday, (y)esterday or any date written in the DD/MM/YY format e.g. 01/01/18 for 1st January 2018
+* The search terms must be enclosed in quotes if multiple words are used
 * The first letter of the format can be used i.e. (p)aperback, (h)ardcover, (k)indle or (e)book
+* The date can be (t)oday, (y)esterday or any date written in the DD/MM/YY format e.g. 01/01/18 for 1st January 2018
 * The rating is a number between 1 and 5
-* The review is also enclosed in quotes but is entirely optional
+* The review is also enclosed in quotes, unless only a single word, but is entirely optional in both modes.
