@@ -34,7 +34,7 @@ def test_run():
     yesterday = dt.strftime(dt.now() - timedelta(1), '%d/%m/%y')
     today = dt.strftime(dt.now(), '%d/%m/%y')
     book_info = {
-        'title': 'Cannery Row', 'author': 'John Steinbeck', 'date': yesterday,
+        'terms': 'Cannery Row', 'date': yesterday,
         'format': 'kindle', 'rating': '4', 'review': 'Test Review',
     }
 
@@ -42,7 +42,7 @@ def test_run():
     driver.implicitly_wait(10)
 
     ligrarian.goodreads_login(driver, email, password)
-    ligrarian.goodreads_find(driver, book_info['title'], book_info['author'])
+    ligrarian.goodreads_find(driver, book_info['terms'])
     url = ligrarian.goodreads_filter(driver, book_info['format'])
     shelves = ligrarian.goodreads_get_shelves(driver, book_info['rating'])
 
