@@ -199,9 +199,9 @@ class GuiInput():
 def parse_arguments():
     """Parse command line arguments and return dictionary of values."""
     parser = argparse.ArgumentParser(description="Goodreads updater")
-    subparser = parser.add_subparsers(help="Choose between url or search")
+    subparser = parser.add_subparsers(help="Choose url (u) or search (s)")
 
-    url_parser = subparser.add_parser("url")
+    url_parser = subparser.add_parser("url", aliases=['u'])
     url_parser.add_argument('url', metavar="url",
                             help="Book's Goodreads URL within quotes")
     url_parser.add_argument('date', help=("(t)oday, (y)esterday or "
@@ -212,7 +212,7 @@ def parse_arguments():
     url_parser.add_argument('review', nargs='?', metavar="'review'",
                             help="Review enclosed in quotes")
 
-    search_parser = subparser.add_parser("search")
+    search_parser = subparser.add_parser("search", aliases=['s'])
     search_parser.add_argument('terms', metavar="'terms'",
                                 help="Search terms to use e.g. Book title "
                                      "and Author")
