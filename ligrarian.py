@@ -199,9 +199,9 @@ class GuiInput():
 def parse_arguments():
     """Parse command line arguments and return dictionary of values."""
     parser = argparse.ArgumentParser(description="Goodreads updater")
-    subparser = parser.add_subparsers(help="Choose url (u) or search (s)")
+    subparsers = parser.add_subparsers(help="Choose (u)rl, (s)earch or (g)ui")
 
-    url_parser = subparser.add_parser("url", aliases=['u'])
+    url_parser = subparsers.add_parser("url", aliases=['u'])
     url_parser.add_argument('url', metavar="url",
                             help="Book's Goodreads URL within quotes")
     url_parser.add_argument('date', help=("(t)oday, (y)esterday or "
@@ -212,11 +212,11 @@ def parse_arguments():
     url_parser.add_argument('review', nargs='?', metavar="'review'",
                             help="Review enclosed in quotes")
 
-    search_parser = subparser.add_parser("search", aliases=['s'])
+    search_parser = subparsers.add_parser('search', aliases=['s'])
     search_parser.add_argument('terms', metavar="'terms'",
                                 help="Search terms to use e.g. Book title "
                                      "and Author")
-    search_parser.add_argument('format', metavar="'format'",
+    search_parser.add_argument('format', metavar='format',
                                choices=['e', 'h', 'k', 'p'],
                                help="(p)aperback, (h)ardcover, "
                                     "(k)indle, (e)book")
@@ -227,6 +227,10 @@ def parse_arguments():
                                help="A number 1 through 5")
     search_parser.add_argument('review', nargs='?', metavar="'review'",
                                help="Review enclosed in quotes")
+
+    gui = subparsers.add_parser("gui", aliases=['g'])
+    gui.add_argument('gui', action='store_true',
+                     help="Invoke GUI (Defaults to True)")
 
     args = parser.parse_args()
     return (vars(args))
@@ -513,25 +517,16 @@ def main():
     """Coordinate Updating of Goodreads account and writing to spreasheet."""
     today = dt.strftime(dt.now(), '%d/%m/%y')
     yesterday = dt.strftime(dt.now() - timedelta(1), '%d/%m/%y')
+    args = parse_arguments()
 
-    # Bypass GUI and process command line arguments if given
-    if len(sys.argv) > 1:
-        email, password = user_info()
-        book_info = parse_arguments()
-
-        # Process date if given as (t)oday or (y)esterday into proper format
-        if book_info['date'].lower() == 't':
-            book_info['date'] = today
-        elif book_info['date'].lower() == 'y':
-            book_info['date'] = yesterday
-
-    else:
+    if 'gui' in args:
         root = tk.Tk()
         root.protocol("WM_DELETE_WINDOW", exit)
         gui = GuiInput(root, today, yesterday)
         root.mainloop()
 
         book_info = gui.gui_book_info
+        print(book_info)
         email = gui.email
         password = gui.password
 
@@ -539,6 +534,14 @@ def main():
             write_config(email, password, 'no')
         else:
             write_config(email, "", 'yes')
+
+    else:
+        book_info = args
+        # Process date if given as (t)oday or (y)esterday into proper format
+        if book_info['date'].lower() == 't':
+            book_info['date'] = today
+        elif book_info['date'].lower() == 'y':
+            book_info['date'] = yesterday
 
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
@@ -548,10 +551,10 @@ def main():
 
     if 'terms' in book_info:
         goodreads_find(driver, book_info['terms'])
-        url = goodreads_filter(driver, book_info['format'])
+        book_url = goodreads_filter(driver, book_info['format'])
     else:
-        url = book_info['url']
-        driver.get(url)
+        book_url = book_info['url']
+        driver.get(book_url)
 
     shelves = goodreads_get_shelves(driver, book_info['rating'])
 
@@ -562,8 +565,7 @@ def main():
     goodreads_date_input(driver, book_info['date'], reread)
     goodreads_add_review(driver, book_info['review'])
     driver.find_element_by_name('next').click()
-    # Return to main book page
-    driver.get(url)
+    driver.get(book_url)
     goodreads_rate_book(driver, book_info['rating'])
     if not reread:
         goodreads_shelve(driver, shelves)
@@ -572,7 +574,7 @@ def main():
     print('Goodreads account updated.')
 
     print('Updating Spreadsheet...')
-    info = parse_page(url)
+    info = parse_page(book_url)
     info['category'], info['genre'] = category_and_genre(shelves)
     year_sheet = '20' + book_info['date'][-2:]
     input_info(year_sheet, info, book_info['date'])
