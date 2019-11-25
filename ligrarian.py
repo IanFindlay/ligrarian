@@ -2,21 +2,22 @@
 
 """Automatically update Goodreads and local Spreadsheet with book read info.
 
-Without arguments ligrarian.py loads a GUI. This can be bypassed via arguments
-
 Args:
-    Two operational modes url or search
+    Three operational modes (g)ui, (s)earch or (u)rl
 
-    url arguments:
-        URL: Goodreads URL for the book
-        Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YY
-        Rating: Number between 1 and 5
-        Review (Optional): Enclosed in double quotation marks
+    gui arguments:
+        None
 
     search arguments:
         Title of Book: Enclosed in double quotation marks
         Author of Book: Enclosed in double quotation marks
         Format: (p)aperback, (h)ardcover, (k)indle or (e)book
+        Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YY
+        Rating: Number between 1 and 5
+        Review (Optional): Enclosed in double quotation marks
+
+    url arguments:
+        URL: Goodreads URL for the book
         Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YY
         Rating: Number between 1 and 5
         Review (Optional): Enclosed in double quotation marks
@@ -29,6 +30,7 @@ from datetime import timedelta
 import sys
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import ttk
 
 import bs4
 import openpyxl
@@ -42,50 +44,55 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 
 
-class GuiInput():
-    """Ligrarian GUI layout and related methods."""
+
+class Gui:
 
     def __init__(self, master, today, yesterday):
+        self.master = master
         self.today = today
         self.yesterday = yesterday
 
-        # Variables of the information to be entered
+        master.title("Ligrarian")
+        self.master.geometry('665x560')
+        self.notebook = ttk.Notebook(master)
+        self.notebook.pack(expand=1, fill="both")
+
         self.email = get_setting('User', 'Email')
         self.password = get_setting('User', 'Password')
         self.gui_book_info = {}
         self.save_choice = None
 
-        # GUI Structure
-        self.master = master
-        self.master.title("Ligrarian")
-        self.master.geometry('665x560')
+        self.add_search_tab()
+
+
+    def add_search_tab(self):
+
+        self.search_tab = ttk.Frame(self.notebook)
+        self.notebook.add(self.search_tab, text="Search")
 
         # Labels
-        self.login_label = tk.Label(self.master, text="Login")
-        self.login_label.grid(row=2, column=1, sticky='W',
-                              pady=(30, 5), padx=10)
+        login_label = tk.Label(self.search_tab, text="Login")
+        login_label.grid(row=2, column=1, sticky='W',
+                         pady=(30, 5), padx=10)
 
-        self.title_label = tk.Label(self.master, text="Title")
-        self.title_label.grid(row=3, column=1, sticky='W', padx=10)
+        terms_label = tk.Label(self.search_tab, text="Search Terms")
+        terms_label.grid(row=3, column=1, sticky='W', padx=10)
 
-        self.author_label = tk.Label(self.master, text="Author")
-        self.author_label.grid(row=4, column=1, sticky='W', padx=10)
+        date_label = tk.Label(self.search_tab, text="Date")
+        date_label.grid(row=5, column=1, sticky='W', padx=10)
 
-        self.date_label = tk.Label(self.master, text="Date")
-        self.date_label.grid(row=5, column=1, sticky='W', padx=10)
+        format_label = tk.Label(self.search_tab, text="Format")
+        format_label.grid(row=6, column=1, sticky='W', padx=10)
 
-        self.format_label = tk.Label(self.master, text="Format")
-        self.format_label.grid(row=6, column=1, sticky='W', padx=10)
+        rating_label = tk.Label(self.search_tab, text="Rating")
+        rating_label.grid(row=7, column=1, sticky='W', padx=10)
 
-        self.rating_label = tk.Label(self.master, text="Rating")
-        self.rating_label.grid(row=7, column=1, sticky='W', padx=10)
-
-        self.review_label = tk.Label(self.master, text="Review\n (optional)",
+        review_label = tk.Label(self.search_tab, text="Review\n (optional)",
                                      padx=10)
-        self.review_label.grid(row=8, column=1, sticky='W')
+        review_label.grid(row=8, column=1, sticky='W')
 
         # Widgets
-        self.login_email = tk.Entry(self.master, width=20)
+        self.login_email = tk.Entry(self.search_tab, width=20)
         if self.email:
             self.login_email.insert(0, self.email)
         else:
@@ -93,7 +100,7 @@ class GuiInput():
         self.login_email.grid(row=2, column=2, columnspan=3,
                               sticky='W', pady=(30, 5))
 
-        self.login_password = tk.Entry(self.master, width=20)
+        self.login_password = tk.Entry(self.search_tab, width=20)
         if self.password:
             self.login_password.insert(0, '********')
         else:
@@ -102,7 +109,7 @@ class GuiInput():
                                  pady=(30, 5))
 
         self.save = tk.IntVar()
-        self.save_box = tk.Checkbutton(self.master, text='Save Password',
+        self.save_box = tk.Checkbutton(self.search_tab, text='Save Password',
                                        variable=self.save, onvalue=True,
                                        offvalue=False)
         self.save_box.grid(row=2, column=7, sticky='W', pady=(30, 5))
@@ -110,46 +117,45 @@ class GuiInput():
         if self.password:
             self.save_box.select()
 
-        self.title = tk.Entry(self.master, width=45)
-        self.title.grid(row=3, column=2, columnspan=6,
+        self.terms = tk.Entry(self.search_tab, width=45)
+        self.terms.grid(row=3, column=2, columnspan=6,
                         sticky='W', pady=10)
 
-        self.author = tk.Entry(self.master, width=45)
-        self.author.grid(row=4, column=2, columnspan=6, sticky='w', pady=5)
-
-        self.date = tk.Entry(self.master, width=8)
-        self.date.insert(0, today)
+        self.date = tk.Entry(self.search_tab, width=8)
+        self.date.insert(0, self.today)
         self.date.grid(row=5, column=2, sticky='W', pady=10, ipady=3)
 
-        self.today_button = tk.Button(self.master, text="Today",
+        self.today_button = tk.Button(self.search_tab, text="Today",
                                       command=self.set_today)
 
         self.today_button.grid(row=5, column=3, sticky='W', pady=10,)
 
-        self.yesterday_button = tk.Button(self.master, text="Yesterday",
+        self.yesterday_button = tk.Button(self.search_tab, text="Yesterday",
                                           command=self.set_yesterday)
         self.yesterday_button.grid(row=5, column=4, sticky='W', pady=10)
 
-        def_format = get_setting('Defaults', 'Format')
         formats = ("Paperback", "Hardback", "Kindle", "Ebook",)
         self.book_format = tk.StringVar()
-        self.book_format.set(def_format)
-        self.format = tk.OptionMenu(self.master, self.book_format, *formats)
+        self.book_format.set(get_setting("Defaults", "Format"))
+        self.format = tk.OptionMenu(self.search_tab,
+                                    self.book_format, *formats)
         self.format.grid(row=6, column=2, columnspan=3,
                          sticky='W', pady=5)
 
-        def_rating = get_setting('Defaults', 'Rating')
+        def_rating = '3'
+        def_rating = get_setting("Defaults", "Rating")
         stars = ("1", "2", "3", "4", "5")
         self.star = tk.StringVar()
         self.star.set(def_rating)
-        self.rating = tk.OptionMenu(self.master, self.star, *stars)
+        self.rating = tk.OptionMenu(self.search_tab, self.star, *stars)
         self.rating.grid(row=7, column=2, sticky='W', pady=5)
 
-        self.review = tk.Text(self.master, height=15, width=75, wrap=tk.WORD)
+        self.review = tk.Text(self.search_tab, height=15,
+                              width=75, wrap=tk.WORD)
         self.review.grid(row=8, column=2, columnspan=7, sticky='W', pady=5)
 
-        self.submit_button = tk.Button(self.master, text="Mark as Read",
-                                       command=self.parse_input)
+        self.submit_button = tk.Button(self.search_tab, text="Mark as Read",
+                                       command=self.parse_search_input)
         self.submit_button.grid(row=12, column=7, columnspan=2,
                                 sticky='E', pady=15)
 
@@ -163,7 +169,7 @@ class GuiInput():
         self.date.delete(0, 8)
         self.date.insert(0, self.yesterday)
 
-    def parse_input(self):
+    def parse_search_input(self):
         """Create input dictionary and test if required info has been given."""
         self.email = self.login_email.get()
 
@@ -174,9 +180,8 @@ class GuiInput():
         self.save_choice = self.save.get()
 
         self.gui_book_info = {
-            'title': self.title.get(), 'author': self.author.get(),
-            'date': self.date.get(), 'format': self.book_format.get(),
-            'rating': self.star.get(),
+            'terms': self.terms.get(), 'format': self.book_format.get(),
+            'date': self.date.get(), 'rating': self.star.get(),
             'review': self.review.get('1.0', 'end-1c'),
         }
 
@@ -184,11 +189,10 @@ class GuiInput():
         try:
             assert self.email != 'Email'
             assert self.password != 'Password'
-            assert self.gui_book_info['title']
-            assert self.gui_book_info['author']
+            assert self.gui_book_info['terms']
             assert self.gui_book_info['format']
-            assert self.gui_book_info['rating']
             assert self.gui_book_info['date'] != 'DD/MM/YY'
+            assert self.gui_book_info['rating']
             self.master.destroy()
 
         except AssertionError:
@@ -345,10 +349,10 @@ def goodreads_get_shelves(driver, rating):
     return shelves
 
 
-def goodreads_date_input(driver, date_done, reread=False):
+def goodreads_date_input(driver, date_done, reread):
     """Select completion date on review page, add new selectors for rereads."""
-    book_url = driver.current_url.split('/')[-1]
-    driver.get("https://www.goodreads.com/review/edit/{}".format(book_url))
+    book_code = driver.current_url.split('/')[-1]
+    driver.get("https://www.goodreads.com/review/edit/{}".format(book_code))
 
     # If it's a reread need to create new session selectors
     if reread:
@@ -522,11 +526,10 @@ def main():
     if 'gui' in args:
         root = tk.Tk()
         root.protocol("WM_DELETE_WINDOW", exit)
-        gui = GuiInput(root, today, yesterday)
+        gui = Gui(root, today, yesterday)
         root.mainloop()
 
         book_info = gui.gui_book_info
-        print(book_info)
         email = gui.email
         password = gui.password
 
@@ -537,6 +540,7 @@ def main():
 
     else:
         book_info = args
+        email, password = user_info()
         # Process date if given as (t)oday or (y)esterday into proper format
         if book_info['date'].lower() == 't':
             book_info['date'] = today
@@ -562,6 +566,7 @@ def main():
     rating_elem = driver.find_element_by_class_name('stars')
     current_rating = rating_elem.get_attribute('data-rating')
     reread = current_rating != '0'
+
     goodreads_date_input(driver, book_info['date'], reread)
     goodreads_add_review(driver, book_info['review'])
     driver.find_element_by_name('next').click()
