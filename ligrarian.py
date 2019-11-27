@@ -44,27 +44,19 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 
 
-
 class Gui:
 
-    def __init__(self, master, today, yesterday):
+    def __init__(self, master):
         """Initialise GUI."""
         self.master = master
-        self.today = today
-        self.yesterday = yesterday
-
-        master.title("Ligrarian")
+        self.master.title("Ligrarian")
         self.master.geometry('665x560')
         self.notebook = ttk.Notebook(master)
         self.notebook.pack(expand=1, fill="both")
-
-        self.email = get_setting('User', 'Email')
-        self.password = get_setting('User', 'Password')
         self.gui_info = {}
-        self.save_choice = None
 
-        SearchTab(self.notebook, self.master, today, yesterday)
-        UrlTab(self.notebook, self.master, today, yesterday)
+        SearchTab(self.notebook, self.master)
+        UrlTab(self.notebook, self.master)
 
 
     def add_shared_widgets(self, tab, main_text):
@@ -89,15 +81,17 @@ class Gui:
 
         # Widgets
         self.login_email = tk.Entry(tab, width=20)
-        if self.email:
-            self.login_email.insert(0, self.email)
+        email = get_setting('User', 'Email')
+        if email:
+            self.login_email.insert(0, email)
         else:
             self.login_email.insert(0, 'Email')
         self.login_email.grid(row=2, column=2, columnspan=3,
                               sticky='W', pady=(30, 5))
 
+        password = get_setting('User', 'Password')
         self.login_password = tk.Entry(tab, width=20)
-        if self.password:
+        if password:
             self.login_password.insert(0, '********')
         else:
             self.login_password.insert(0, 'Password')
@@ -109,8 +103,7 @@ class Gui:
                                        variable=self.save, onvalue=True,
                                        offvalue=False)
         self.save_box.grid(row=2, column=7, sticky='W', pady=(30, 5))
-        # Select save by default if password already saved
-        if self.password:
+        if password:
             self.save_box.select()
 
         self.main = tk.Entry(tab, width=45)
@@ -118,16 +111,16 @@ class Gui:
                        sticky='W', pady=10)
 
         self.date = tk.Entry(tab, width=8)
-        self.date.insert(0, self.today)
-        self.date.grid(row=5, column=2, sticky='W', pady=10, ipady=3)
+        self.date.insert(0, 'DD/MM/YY')
+        self.date.grid(row=5, column=2, sticky='W', pady=10, ipady=3, ipadx=5)
 
         self.today_button = tk.Button(tab, text="Today",
-                command=lambda: self.set_date(self.date, self.today))
+                command=lambda: self.set_date('today'))
 
         self.today_button.grid(row=5, column=3, sticky='W', pady=10,)
 
         self.yesterday_button = tk.Button(tab, text="Yesterday",
-                command=lambda: self.set_date(self.date, self.yesterday))
+                command=lambda: self.set_date('yesterday'))
         self.yesterday_button.grid(row=5, column=4, sticky='W', pady=10)
 
         stars = ("1", "2", "3", "4", "5")
@@ -145,64 +138,46 @@ class Gui:
         self.submit_button.grid(row=12, column=7, columnspan=2,
                                 sticky='E', pady=15)
 
-    def set_date(self, widget_name, new_value):
+    def set_date(self, day_name):
         """Set specified date widget to new_value."""
-        widget_name.delete(0, 8)
-        widget_name.insert(0, new_value)
-
+        self.date.delete(0, 8)
+        self.date.insert(0, get_date_str(day_name))
 
     def parse_input(self):
         """Create input dictionary and test if required info has been given."""
         password = self.login_password.get()
-        if password != '********':
-            self.password = password
+        if password == '********':
+            password = get_setting('User', 'Password')
 
-        self.gui_info = {
-                    'email': self.login_email.get(),
-                    'password': self.password,
-                    'save_choice': self.save.get(),
-                    'main': self.main.get(), 'date': self.date.get(),
-                    'rating': self.star.get(),
+        Gui.gui_info = {
+                    'email': self.login_email.get(), 'password': password,
+                    'save_choice': self.save.get(), 'main': self.main.get(),
+                    'date': self.date.get(), 'rating': self.star.get(),
                     'review': self.review.get('1.0', 'end-1c'),
         }
 
         if self.notebook.index("current") == 0:
-            self.gui_info['format'] = self.book_format.get()
+            Gui.gui_info['format'] = self.book_format.get()
 
-            try:
-                assert self.gui_info['format']
-            except AssertionError:
-                messagebox.showwarning(message="Complete all non-optional "
-                                       "fields before marking as read.")
-
-        # Check shared information has been entered
         try:
             assert self.gui_info['email'] != 'Email'
             assert self.gui_info['password'] != 'Password'
             assert self.gui_info['main']
+            if self.notebook.index("current") == 0:
+                assert self.gui_info["format"]
             self.master.destroy()
 
         except AssertionError:
             messagebox.showwarning(message="Complete all non-optional "
                                    "fields before marking as read.")
 
-        Gui.gui_info = self.gui_info
-
 
 class SearchTab(Gui):
 
-    def __init__(self, notebook, master, today, yesterday):
-
-        self.email = get_setting('User', 'Email')
-        self.password = get_setting('User', 'Password')
-        self.gui_book_info = {}
-        self.save_choice = None
-        self.today = today
-        self.yesterday = yesterday
+    def __init__(self, notebook, master):
 
         self.notebook = notebook
         self.master = master
-
         tab = ttk.Frame(notebook)
         self.notebook.add(tab, text="Search")
 
@@ -221,22 +196,30 @@ class SearchTab(Gui):
 
 class UrlTab(Gui):
 
-    def __init__(self, notebook, master, today, yesterday):
-
-        self.email = get_setting('User', 'Email')
-        self.password = get_setting('User', 'Password')
-        self.gui_book_info = {}
-        self.save_choice = None
-        self.today = today
-        self.yesterday = yesterday
+    def __init__(self, notebook, master):
 
         self.notebook = notebook
         self.master = master
+        tab = ttk.Frame(notebook)
+        notebook.add(tab, text="URL")
+        self.add_shared_widgets(tab, 'Book URL')
 
-        self.url_tab = ttk.Frame(notebook)
-        notebook.add(self.url_tab, text="URL")
 
-        self.add_shared_widgets(self.url_tab, 'Book URL')
+def get_date_str(day):
+    """Returns string representing day arg.
+
+    Args:
+        day: either 'today' or 'yesterday'.
+
+    Returns:
+        String of datetime formatted 'DD/MM/YY' of arg day.
+
+    """
+    today_datetime = dt.now()
+    if day == 'today':
+        return dt.strftime(today_datetime, '%d/%m/%y')
+    elif day =='yesterday':
+        return dt.strftime(today_datetime - timedelta(1), '%d/%m/%y')
 
 
 def parse_arguments():
@@ -556,16 +539,15 @@ def first_blank_row(sheet):
     return input_row
 
 
+
 def main():
     """Coordinate Updating of Goodreads account and writing to spreasheet."""
-    today = dt.strftime(dt.now(), '%d/%m/%y')
-    yesterday = dt.strftime(dt.now() - timedelta(1), '%d/%m/%y')
     args = parse_arguments()
 
     if 'gui' in args:
         root = tk.Tk()
         root.protocol("WM_DELETE_WINDOW", exit)
-        gui = Gui(root, today, yesterday)
+        Gui(root)
         root.mainloop()
 
         book_info = Gui.gui_info
@@ -582,9 +564,9 @@ def main():
         email, password = user_info()
         # Process date if given as (t)oday or (y)esterday into proper format
         if book_info['date'].lower() == 't':
-            book_info['date'] = today
+            book_info['date'] = get_date_str('today')
         elif book_info['date'].lower() == 'y':
-            book_info['date'] = yesterday
+            book_info['date'] = get_date_str('yesterday')
 
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
