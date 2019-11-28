@@ -64,7 +64,7 @@ class Gui:
         SearchTab(self.notebook, self.master)
         UrlTab(self.notebook, self.master)
 
-    def add_shared_widgets(self, tab, main_text):
+    def add_shared_widgets(self, tab):
         """Create widgets mutual to each tab of the notebook.
 
         Args:
@@ -76,9 +76,6 @@ class Gui:
         login_label = tk.Label(tab, text="Login")
         login_label.grid(row=2, column=1, sticky='W',
                          pady=(30, 5), padx=10)
-
-        main_label = tk.Label(tab, text=main_text)
-        main_label.grid(row=3, column=1, sticky='W', padx=10)
 
         date_label = tk.Label(tab, text="Date")
         date_label.grid(row=5, column=1, sticky='W', padx=10)
@@ -109,46 +106,43 @@ class Gui:
                                  pady=(30, 5))
 
         self.save = tk.IntVar()
-        self.save_box = tk.Checkbutton(tab, text='Save Password',
-                                       variable=self.save, onvalue=True,
-                                       offvalue=False)
-        self.save_box.grid(row=2, column=7, sticky='W', pady=(30, 5))
+        save_box = tk.Checkbutton(
+            tab, text='Save Password', variable=self.save, onvalue=True,
+            offvalue=False
+        )
+        save_box.grid(row=2, column=7, sticky='W', pady=(30, 5))
         if password:
-            self.save_box.select()
-
-        self.main = tk.Entry(tab, width=45)
-        self.main.grid(row=3, column=2, columnspan=6,
-                       sticky='W', pady=10)
+            save_box.select()
 
         self.date = tk.Entry(tab, width=8)
         self.date.insert(0, 'DD/MM/YY')
         self.date.grid(row=5, column=2, sticky='W', pady=10, ipady=3, ipadx=5)
 
-        self.today_button = tk.Button(
+        today_button = tk.Button(
             tab, text="Today", command=self.set_date()
         )
 
-        self.today_button.grid(row=5, column=3, sticky='W', pady=10,)
+        today_button.grid(row=5, column=3, sticky='W', pady=10,)
 
-        self.yesterday_button = tk.Button(
+        yesterday_button = tk.Button(
             tab, text="Yesterday", command=lambda: self.set_date(True)
         )
-        self.yesterday_button.grid(row=5, column=4, sticky='W', pady=10)
+        yesterday_button.grid(row=5, column=4, sticky='W', pady=10)
 
         stars = ("1", "2", "3", "4", "5")
         self.star = tk.StringVar()
         self.star.set(get_setting("Defaults", "Rating"))
-        self.rating = tk.OptionMenu(tab, self.star, *stars)
-        self.rating.grid(row=7, column=2, sticky='W', pady=5)
+        rating = tk.OptionMenu(tab, self.star, *stars)
+        rating.grid(row=7, column=2, sticky='W', pady=5)
 
         self.review = tk.Text(tab, height=15,
                               width=75, wrap=tk.WORD)
         self.review.grid(row=8, column=2, columnspan=7, sticky='W', pady=5)
 
-        self.submit_button = tk.Button(tab, text="Mark as Read",
-                                       command=self.parse_input)
-        self.submit_button.grid(row=12, column=7, columnspan=2,
-                                sticky='E', pady=15)
+        submit_button = tk.Button(
+            tab, text="Mark as Read", command=self.parse_input
+        )
+        submit_button.grid(row=12, column=7, columnspan=2, sticky='E', pady=15)
 
     def set_date(self, yesterday=False):
         """Set date widget to a new value based upon day_name.
@@ -168,20 +162,25 @@ class Gui:
 
         Gui.gui_info = {
             'email': self.login_email.get(), 'password': password,
-            'save_choice': self.save.get(), 'main': self.main.get(),
-            'date': self.date.get(), 'rating': self.star.get(),
+            'save_choice': self.save.get(), 'date': self.date.get(),
+            'rating': self.star.get(),
             'review': self.review.get('1.0', 'end-1c'),
         }
 
         if self.notebook.index("current") == 0:
-            Gui.gui_info['format'] = SearchTab.book_format.get()
+            Gui.gui_info['search'] = self.search.get()
+            Gui.gui_info['format'] = self.book_format.get()
+        else:
+            Gui.gui_info['url'] = self.url.get()
 
         try:
             assert self.gui_info['email'] != 'Email'
             assert self.gui_info['password'] != 'Password'
-            assert self.gui_info['main']
             if self.notebook.index("current") == 0:
-                assert self.gui_info["format"]
+                assert self.gui_info['search']
+                assert self.gui_info['format']
+            else:
+                assert self.gui_info['url']
             self.master.destroy()
 
         except AssertionError:
@@ -205,6 +204,12 @@ class SearchTab(Gui):
         tab = ttk.Frame(notebook)
         self.notebook.add(tab, text="Search")
 
+        search_label = tk.Label(tab, text='Search')
+        search_label.grid(row=3, column=1, sticky='W', padx=10)
+        self.search = tk.Entry(tab, width=45)
+        self.search.grid(row=3, column=2, columnspan=6, sticky='W', pady=10)
+
+
         format_label = tk.Label(tab, text="Format")
         format_label.grid(row=6, column=1, sticky='W', padx=10)
         formats = ("Paperback", "Hardback", "Kindle", "Ebook",)
@@ -215,7 +220,7 @@ class SearchTab(Gui):
         self.format.grid(row=6, column=2, columnspan=3,
                          sticky='W', pady=5)
 
-        self.add_shared_widgets(tab, 'Search')
+        self.add_shared_widgets(tab)
 
 
 class UrlTab(Gui):
@@ -233,7 +238,13 @@ class UrlTab(Gui):
         self.master = master
         tab = ttk.Frame(notebook)
         notebook.add(tab, text="URL")
-        self.add_shared_widgets(tab, 'Book URL')
+
+        url_label = tk.Label(tab, text='URL')
+        url_label.grid(row=3, column=1, sticky='W', padx=10)
+        self.url = tk.Entry(tab, width=45)
+        self.url.grid(row=3, column=2, columnspan=6, sticky='W', pady=10)
+
+        self.add_shared_widgets(tab)
 
 
 def get_date_str(yesterday=False):
@@ -274,7 +285,7 @@ def parse_arguments():
                             help="Review enclosed in quotes")
 
     search_parser = subparsers.add_parser('search', aliases=['s'])
-    search_parser.add_argument('terms', metavar="'terms'",
+    search_parser.add_argument('search', metavar="'search terms'",
                                help="Search terms to use e.g. Book title "
                                     "and Author")
     search_parser.add_argument('format', metavar='format',
@@ -723,11 +734,10 @@ def main():
     goodreads_login(driver, details['email'], details['password'])
 
     if 'format' in details:
-        text = details['main'] if 'main' in details else details['terms']
-        goodreads_find(driver, text)
+        goodreads_find(driver, details['search'])
         url = goodreads_filter(driver, details['format'])
     else:
-        url = details['url'] if 'url' in details else details['main']
+        url = details['url']
         driver.get(url)
 
     shelves = goodreads_get_shelves(driver, details['rating'])
