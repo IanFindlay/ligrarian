@@ -45,9 +45,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 
 class Gui:
+    """Acts as the base of the GUI and contains the assoicated methods."""
 
     def __init__(self, master):
-        """Initialise GUI."""
+        """Gui class constructor to initialise Gui object.
+
+        Args:
+            master (obj): tkinter TK object - base object for the GUI.
+
+        """
         self.master = master
         self.master.title("Ligrarian")
         self.master.geometry('665x560')
@@ -58,9 +64,14 @@ class Gui:
         SearchTab(self.notebook, self.master)
         UrlTab(self.notebook, self.master)
 
-
     def add_shared_widgets(self, tab, main_text):
-        """Create widgets present on each of the notebook's tabs."""
+        """Create widgets mutual to each tab of the notebook.
+
+        Args:
+            tab (obj): tkinter.ttk Frame object - a tab for the GUI.
+            main_text (str): Text to label the main text input box.
+
+        """
         # Labels
         login_label = tk.Label(tab, text="Login")
         login_label.grid(row=2, column=1, sticky='W',
@@ -75,8 +86,7 @@ class Gui:
         rating_label = tk.Label(tab, text="Rating")
         rating_label.grid(row=7, column=1, sticky='W', padx=10)
 
-        review_label = tk.Label(tab, text="Review\n (optional)",
-                                     padx=10)
+        review_label = tk.Label(tab, text="Review\n (optional)", padx=10)
         review_label.grid(row=8, column=1, sticky='W')
 
         # Widgets
@@ -114,13 +124,15 @@ class Gui:
         self.date.insert(0, 'DD/MM/YY')
         self.date.grid(row=5, column=2, sticky='W', pady=10, ipady=3, ipadx=5)
 
-        self.today_button = tk.Button(tab, text="Today",
-                command=lambda: self.set_date('today'))
+        self.today_button = tk.Button(
+            tab, text="Today", command=self.set_date()
+        )
 
         self.today_button.grid(row=5, column=3, sticky='W', pady=10,)
 
-        self.yesterday_button = tk.Button(tab, text="Yesterday",
-                command=lambda: self.set_date('yesterday'))
+        self.yesterday_button = tk.Button(
+            tab, text="Yesterday", command=lambda: self.set_date(True)
+        )
         self.yesterday_button.grid(row=5, column=4, sticky='W', pady=10)
 
         stars = ("1", "2", "3", "4", "5")
@@ -138,10 +150,15 @@ class Gui:
         self.submit_button.grid(row=12, column=7, columnspan=2,
                                 sticky='E', pady=15)
 
-    def set_date(self, day_name):
-        """Set specified date widget to new_value."""
+    def set_date(self, yesterday=False):
+        """Set date widget to a new value based upon day_name.
+
+        Args:
+            day_name (str): Either 'today' or 'yesterday'.
+
+        """
         self.date.delete(0, 8)
-        self.date.insert(0, get_date_str(day_name))
+        self.date.insert(0, get_date_str(yesterday))
 
     def parse_input(self):
         """Create input dictionary and test if required info has been given."""
@@ -150,14 +167,14 @@ class Gui:
             password = get_setting('User', 'Password')
 
         Gui.gui_info = {
-                    'email': self.login_email.get(), 'password': password,
-                    'save_choice': self.save.get(), 'main': self.main.get(),
-                    'date': self.date.get(), 'rating': self.star.get(),
-                    'review': self.review.get('1.0', 'end-1c'),
+            'email': self.login_email.get(), 'password': password,
+            'save_choice': self.save.get(), 'main': self.main.get(),
+            'date': self.date.get(), 'rating': self.star.get(),
+            'review': self.review.get('1.0', 'end-1c'),
         }
 
         if self.notebook.index("current") == 0:
-            Gui.gui_info['format'] = self.book_format.get()
+            Gui.gui_info['format'] = SearchTab.book_format.get()
 
         try:
             assert self.gui_info['email'] != 'Email'
@@ -173,9 +190,16 @@ class Gui:
 
 
 class SearchTab(Gui):
+    """Class representing the Search tab of the tkinter GUI notebook."""
 
     def __init__(self, notebook, master):
+        """SearchTab class constructor to initialise Search tab in notebook.
 
+        Args:
+            notebook (obj): tkinter.tk notebook object (tab structure support).
+            master (obj): tkinter TK object - base object for the GUI.
+
+        """
         self.notebook = notebook
         self.master = master
         tab = ttk.Frame(notebook)
@@ -195,9 +219,16 @@ class SearchTab(Gui):
 
 
 class UrlTab(Gui):
+    """Class representing the URL tab of the tkinter GUI notebook."""
 
     def __init__(self, notebook, master):
+        """UrlTab class constructor to initialise URL tab in notebook.
 
+        Args:
+            notebook (obj): tkinter.tk notebook object (tab structure support).
+            master (obj): tkinter TK object - base object for the GUI.
+
+        """
         self.notebook = notebook
         self.master = master
         tab = ttk.Frame(notebook)
@@ -205,25 +236,29 @@ class UrlTab(Gui):
         self.add_shared_widgets(tab, 'Book URL')
 
 
-def get_date_str(day):
-    """Returns string representing day arg.
+def get_date_str(yesterday=False):
+    """Return a string of today's or yesterday's date.
 
     Args:
-        day: either 'today' or 'yesterday'.
+        yesterday (bool): Should the date be yesterday's (default is False).
 
     Returns:
-        String of datetime formatted 'DD/MM/YY' of arg day.
+        Strftime datetime of today's or yesterday's date formatted 'DD/MM/YY'.
 
     """
     today_datetime = dt.now()
-    if day == 'today':
-        return dt.strftime(today_datetime, '%d/%m/%y')
-    elif day =='yesterday':
+    if yesterday:
         return dt.strftime(today_datetime - timedelta(1), '%d/%m/%y')
+    return dt.strftime(today_datetime, '%d/%m/%y')
 
 
 def parse_arguments():
-    """Parse command line arguments and return dictionary of values."""
+    """Set up parsers/subparsers and parse command line arguments.
+
+    Returns:
+        Dictionary of parsed arguments.
+
+    """
     parser = argparse.ArgumentParser(description="Goodreads updater")
     subparsers = parser.add_subparsers(help="Choose (u)rl, (s)earch or (g)ui")
 
@@ -240,8 +275,8 @@ def parse_arguments():
 
     search_parser = subparsers.add_parser('search', aliases=['s'])
     search_parser.add_argument('terms', metavar="'terms'",
-                                help="Search terms to use e.g. Book title "
-                                     "and Author")
+                               help="Search terms to use e.g. Book title "
+                                    "and Author")
     search_parser.add_argument('format', metavar='format',
                                choices=['e', 'h', 'k', 'p'],
                                help="(p)aperback, (h)ardcover, "
@@ -259,11 +294,20 @@ def parse_arguments():
                      help="Invoke GUI (Defaults to True)")
 
     args = parser.parse_args()
-    return (vars(args))
+    return vars(args)
 
 
 def get_setting(section, option):
-    """Return the value associated with option under section in settings."""
+    """Return the value associated with option under section in settings.
+
+    Args:
+        section (str): The section the information is under in the config.
+        option (str): The option to retrieve and return the value of.
+
+    Returns:
+        String representing the value retrieved by the args.
+
+    """
     config = configparser.ConfigParser()
     config.read('settings.ini')
     value = config.get(section, option)
@@ -272,7 +316,12 @@ def get_setting(section, option):
 
 
 def user_info():
-    """Prompt for missing user info unless prompt is disabled."""
+    """Prompt for missing user information and manage the password prompt.
+
+    Returns:
+        Tuple containing prompted for email and password.
+
+    """
     email = get_setting('User', 'Email')
     if not email:
         email = input('Email: ')
@@ -296,7 +345,14 @@ def user_info():
 
 
 def write_config(email, password, prompt):
-    """Write configuration file."""
+    """Write configuration file.
+
+    Args:
+        email (str): Email address to write to the config file.
+        password (str): Password to write to the config file.
+        prompt (str): Whether to disable the save prompt ('yes' or 'no').
+
+    """
     config = configparser.ConfigParser()
     config.read('settings.ini')
     config.set('User', 'Email', email)
@@ -308,7 +364,14 @@ def write_config(email, password, prompt):
 
 
 def goodreads_login(driver, email, password):
-    """Login to Goodreads account from the homepage."""
+    """Login to Goodreads account from the homepage.
+
+    Args:
+        driver: Selenium webdriver to act upon.
+        email (str): Email address to be entered.
+        password (str): Password to be entered.
+
+    """
     driver.get('https://goodreads.com')
 
     driver.find_element_by_name('user[email]').send_keys(email)
@@ -320,11 +383,20 @@ def goodreads_login(driver, email, password):
     except NoSuchElementException:
         print('Failed to login - Email and/or Password probably incorrect.')
         driver.close()
-        exit()
+        sys.exit()
 
 
 def goodreads_find(driver, terms):
-    """Find the book on Goodreads and navigate to all editions page."""
+    """Find the book on Goodreads and navigate to all editions page.
+
+    Args:
+        driver: Selenium webdriver to act upon.
+        terms (str): Terms to be used in the Goodreads search.
+
+    Raises:
+        NoSuchElementException: Search terms yields no results.
+
+    """
     search_elem = driver.find_element_by_class_name('searchBox__input')
     search_elem.send_keys(terms, Keys.ENTER)
 
@@ -333,11 +405,20 @@ def goodreads_find(driver, terms):
     except NoSuchElementException:
         print("Failed to find book using those search terms.")
         driver.close()
-        exit()
+        sys.exit()
 
 
 def goodreads_filter(driver, book_format):
-    """Filter editions with book_format and select top book."""
+    """Filter editions with book_format and select top book.
+
+    Args:
+        driver: Selenium webdriver to act upon.
+        book_format (str): The format of the book.
+
+    Returns:
+        Current URL the driver argument is visiting.
+
+    """
     pre_filter_url = driver.current_url
 
     # Filter by format
@@ -357,7 +438,16 @@ def goodreads_filter(driver, book_format):
 
 
 def goodreads_get_shelves(driver, rating):
-    """Find and return list of 'Top Shelves' on Goodreads book page."""
+    """Find and return list of 'Top Shelves' on Goodreads book page.
+
+    Args:
+        driver: Selenium webdriver to act upon.
+        rating (str): String representation of a number 1-5.
+
+    Returns:
+        list of strings of the 'shelve' categories on the current driver page.
+
+    """
     shelves_elems = driver.find_elements_by_class_name('actionLinkLite.'
                                                        'bookPageGenreLink')
     shelves = []
@@ -372,7 +462,15 @@ def goodreads_get_shelves(driver, rating):
 
 
 def goodreads_date_input(driver, date_done, reread):
-    """Select completion date on review page, add new selectors for rereads."""
+    """Select completion date on review page, add new selectors for rereads.
+
+    Args:
+        driver: Selenium webdriver to act upon.
+        date_done (str): Date formatted DD/MM/YY.
+        Reread (str or None): String of a number 1-5, essentially acting as
+                              the boolean True, or None acting as False.
+
+    """
     book_code = driver.current_url.split('/')[-1]
     driver.get("https://www.goodreads.com/review/edit/{}".format(book_code))
 
@@ -413,16 +511,27 @@ def goodreads_date_input(driver, date_done, reread):
 
 
 def goodreads_add_review(driver, review):
-    """Write review in review box (if given)"""
-    if review:
-        review_elem = driver.find_element_by_name('review[review]')
-        review_elem.clear()
-        review_elem.click()
-        review_elem.send_keys(review)
+    """Write review in review box (if given).
+
+    Args:
+        driver: Selenium webdriver to act upon.
+        review (str): Review of the book.
+
+    """
+    review_elem = driver.find_element_by_name('review[review]')
+    review_elem.clear()
+    review_elem.click()
+    review_elem.send_keys(review)
 
 
 def goodreads_rate_book(driver, rating):
-    """Give the book the given rating out of 5."""
+    """Give the book the given rating out of 5.
+
+    Args:
+        driver: Selenium webdriver to act upon.
+        rating (str): A number 1-5.
+
+    """
     # Give star rating
     stars_elem = driver.find_elements_by_class_name('star.off')
     for stars in stars_elem:
@@ -432,7 +541,16 @@ def goodreads_rate_book(driver, rating):
 
 
 def goodreads_shelve(driver, shelves):
-    """Shelve book using 'Top Shelves'."""
+    """Add the Goodreads book to relevant user shelves.
+
+    Use the list of 'Top Shelves' and a users own active shelves to add the
+    book on the driver's current page to each of the relevant shelves.
+
+    Args:
+        driver: Selenium webdriver to act upon.
+        shelves (list): List of strings representing Goodreads shelves.
+
+    """
     # Wait until review box is invisible
     WebDriverWait(driver, 10).until(
         EC.invisibility_of_element_located((By.ID, "box"))
@@ -455,7 +573,15 @@ def goodreads_shelve(driver, shelves):
 
 
 def parse_page(url):
-    """Parse page and return title, author and number of pages info dict."""
+    """Parse Goodreads page for title, author and number of pages.
+
+    Args:
+        url (str): Goodreads Book URL.
+
+    Returns:
+        Dictionary of parsed Title, Author and Number of Pages.
+
+    """
     info = {}
     res = requests.get(url)
     res.raise_for_status()
@@ -477,7 +603,15 @@ def parse_page(url):
 
 
 def category_and_genre(shelves):
-    """Determine and return category and genre from Goodreads 'Top Shelves'."""
+    """Use shelves list to deterime genre and categorise as Fiction/Nonfiction.
+
+    Args:
+        shelves (list): List of strings of Goodreads shelf categories.
+
+    Returns:
+        Tuple of category (Fiction/Nonfiction) and the books genre.
+
+    """
     if 'Nonfiction' in shelves:
         category = 'Nonfiction'
     else:
@@ -492,7 +626,14 @@ def category_and_genre(shelves):
 
 
 def input_info(year_sheet, info, date):
-    """Write the book information to the first blank row on the given sheet."""
+    """Write the book information to the first blank row on the given sheet.
+
+    Args:
+        year_sheet (str): The year the book was read formatted YYYY.
+        info (dict): Information about the book.
+        date (str): Date to input in the 'Read date' column.
+
+    """
     path = get_setting('Settings', 'Path')
     workbook = openpyxl.load_workbook(path)
 
@@ -515,21 +656,33 @@ def input_info(year_sheet, info, date):
     workbook.save(path)
 
 
-def create_sheet(workbook, last_sheet, sheet_name):
-    """Create a new sheet by copying and modifying the latest one."""
-    sheet = workbook.copy_worksheet(workbook[last_sheet])
-    sheet.title = sheet_name
+def create_sheet(workbook, sheet_to_copy, new_sheet_name):
+    """Create a new sheet by copying and modifying the latest one.
+
+    Args:
+        workbook (obj): openpyxl workbook object.
+        sheet_to_copy (str): Name of the sheet to copy.
+        new_sheet_name (str): Name (year formatted YYYY) to name the new sheet.
+
+    """
+    sheet = workbook.copy_worksheet(workbook[sheet_to_copy])
+    sheet.title = new_sheet_name
     last_row = first_blank_row(sheet)
     while last_row > 1:
         for col in range(1, 7):
             sheet.cell(row=last_row, column=col).value = None
         last_row -= 1
-    day_tracker = '=(TODAY()-DATE({},1,1))/7'.format(sheet_name)
+    day_tracker = '=(TODAY()-DATE({},1,1))/7'.format(new_sheet_name)
     sheet.cell(row=5, column=9).value = day_tracker
 
 
 def first_blank_row(sheet):
-    """Return the number of the first blank row of the given sheet."""
+    """Return the number of the first blank row of the given sheet.
+
+    Args:
+        sheet (obj): openpyxl sheet object to find first blank row of.
+
+    """
     input_row = 1
     data = ''
     while data is not None:
@@ -539,9 +692,8 @@ def first_blank_row(sheet):
     return input_row
 
 
-
 def main():
-    """Coordinate Updating of Goodreads account and writing to spreasheet."""
+    """Coordinate Updating of Goodreads account and writing to spreadsheet."""
     args = parse_arguments()
 
     if 'gui' in args:
@@ -550,51 +702,49 @@ def main():
         Gui(root)
         root.mainloop()
 
-        book_info = Gui.gui_info
-        email = book_info['email']
-        password = book_info['password']
-
-        if book_info['save_choice']:
-            write_config(email, password, 'no')
+        details = Gui.gui_info
+        if details['save_choice']:
+            write_config(details['email'], details['password'], 'no')
         else:
-            write_config(email, "", 'yes')
-
+            write_config(details['email'], "", 'yes')
     else:
-        book_info = args
-        email, password = user_info()
+        details = args
+        details['email'], details['password'] = user_info()
         # Process date if given as (t)oday or (y)esterday into proper format
-        if book_info['date'].lower() == 't':
-            book_info['date'] = get_date_str('today')
-        elif book_info['date'].lower() == 'y':
-            book_info['date'] = get_date_str('yesterday')
+        if details['date'].lower() == 't':
+            details['date'] = get_date_str()
+        elif details['date'].lower() == 'y':
+            details['date'] = get_date_str(True)
 
     print('Opening a computer controlled browser and updating Goodreads...')
     driver = webdriver.Firefox()
     driver.implicitly_wait(10)
 
-    goodreads_login(driver, email, password)
+    goodreads_login(driver, details['email'], details['password'])
 
-    if 'format' in book_info:
-        goodreads_find(driver,
-               book_info['main'] if 'main' in book_info else book_info['terms']
-        )
-        url = goodreads_filter(driver, book_info['format'])
-
+    if 'format' in details:
+        text = details['main'] if 'main' in details else details['terms']
+        goodreads_find(driver, text)
+        url = goodreads_filter(driver, details['format'])
     else:
-        url = book_info['url'] if 'url' in book_info else book_info['main']
+        url = details['url'] if 'url' in details else details['main']
         driver.get(url)
 
-    shelves = goodreads_get_shelves(driver, book_info['rating'])
+    shelves = goodreads_get_shelves(driver, details['rating'])
 
     # Use rating element to see if book has been read before
     rating_elem = driver.find_element_by_class_name('stars')
     reread = rating_elem.get_attribute('data-rating') != '0'
 
-    goodreads_date_input(driver, book_info['date'], reread)
-    goodreads_add_review(driver, book_info['review'])
+    goodreads_date_input(driver, details['date'], reread)
+
+    if details['review']:
+        goodreads_add_review(driver, details['review'])
+
     driver.find_element_by_name('next').click()
     driver.get(url)
-    goodreads_rate_book(driver, book_info['rating'])
+    goodreads_rate_book(driver, details['rating'])
+
     if not reread:
         goodreads_shelve(driver, shelves)
 
@@ -602,15 +752,15 @@ def main():
     print('Goodreads account updated.')
 
     print('Updating Spreadsheet...')
-    info = parse_page(book_url)
+    info = parse_page(url)
     info['category'], info['genre'] = category_and_genre(shelves)
-    year_sheet = '20' + book_info['date'][-2:]
-    input_info(year_sheet, info, book_info['date'])
+    year_sheet = '20' + details['date'][-2:]
+    input_info(year_sheet, info, details['date'])
 
     print(('Ligrarian has completed and will now close. The following '
            'information has been written to the spreadsheet:'))
     print(info['title'], info['author'], info['pages'],
-          info['category'], info['genre'], book_info['date'], sep='\n')
+          info['category'], info['genre'], details['date'], sep='\n')
 
 
 if __name__ == '__main__':
