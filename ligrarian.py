@@ -263,7 +263,7 @@ def parse_arguments():
 
 
 def get_setting(section, option):
-    """Return the value associated with option under section in settings"""
+    """Return the value associated with option under section in settings."""
     config = configparser.ConfigParser()
     config.read('settings.ini')
     value = config.get(section, option)
@@ -575,23 +575,25 @@ def main():
     goodreads_login(driver, email, password)
 
     if 'format' in book_info:
-        goodreads_find(driver, book_info['main'])
-        book_url = goodreads_filter(driver, book_info['format'])
+        goodreads_find(driver,
+               book_info['main'] if 'main' in book_info else book_info['terms']
+        )
+        url = goodreads_filter(driver, book_info['format'])
+
     else:
-        book_url = book_info['main']
-        driver.get(book_url)
+        url = book_info['url'] if 'url' in book_info else book_info['main']
+        driver.get(url)
 
     shelves = goodreads_get_shelves(driver, book_info['rating'])
 
     # Use rating element to see if book has been read before
     rating_elem = driver.find_element_by_class_name('stars')
-    current_rating = rating_elem.get_attribute('data-rating')
-    reread = current_rating != '0'
+    reread = rating_elem.get_attribute('data-rating') != '0'
 
     goodreads_date_input(driver, book_info['date'], reread)
     goodreads_add_review(driver, book_info['review'])
     driver.find_element_by_name('next').click()
-    driver.get(book_url)
+    driver.get(url)
     goodreads_rate_book(driver, book_info['rating'])
     if not reread:
         goodreads_shelve(driver, shelves)
