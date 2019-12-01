@@ -39,9 +39,6 @@ A Goodreads librarian - Automates marking a book as read (or reread) on [Goodrea
 
 To get started using Ligrarian, download the directory and place it wherever you want within your system. Install the modules listed in requirements.txt as well as a recent release of Firefox and the [geckodriver](https://github.com/mozilla/geckodriver) for it.
 
-### Note:
-Your Email is saved to the config.ini file in the same directory, so you won't have to enter it every time, and your Password can be saved by checking the 'Save Password' box at the end of the first row of the GUI. Once saved, your Password will appear as asterixs in future GUI sessions.
-
 Ligrarian has three different input modes - (g)ui, (s)earch and (u)rl. Suffix any of these with the --help argument to print information about their arguments to the terminal.
 
 GUI mode loads the Ligrarian GUI and can be invoked by:
