@@ -69,7 +69,6 @@ class Gui:
 
         Args:
             tab (obj): tkinter.ttk Frame object - a tab for the GUI.
-            main_text (str): Text to label the main text input box.
 
         """
         # Labels
@@ -145,10 +144,10 @@ class Gui:
         submit_button.grid(row=12, column=7, columnspan=2, sticky='E', pady=15)
 
     def set_date(self, yesterday=False):
-        """Set date widget to a new value based upon day_name.
+        """Set date widget to a new value.
 
         Args:
-            day_name (str): Either 'today' or 'yesterday'.
+            yesterday (bool): Whether to set date to yesterday's date or not.
 
         """
         self.date.delete(0, 8)
@@ -209,7 +208,6 @@ class SearchTab(Gui):
         self.search = tk.Entry(tab, width=45)
         self.search.grid(row=3, column=2, columnspan=6, sticky='W', pady=10)
 
-
         format_label = tk.Label(tab, text="Format")
         format_label.grid(row=6, column=1, sticky='W', padx=10)
         formats = ("Paperback", "Hardback", "Kindle", "Ebook",)
@@ -251,7 +249,7 @@ def get_date_str(yesterday=False):
     """Return a string of today's or yesterday's date.
 
     Args:
-        yesterday (bool): Should the date be yesterday's (default is False).
+        yesterday (bool): Whether to get yesterday's date or not.
 
     Returns:
         Strftime datetime of today's or yesterday's date formatted 'DD/MM/YY'.
@@ -427,7 +425,7 @@ def goodreads_filter(driver, book_format):
         book_format (str): The format of the book.
 
     Returns:
-        Current URL the driver argument is visiting.
+        Current URL the driver argument is now visiting.
 
     """
     pre_filter_url = driver.current_url
@@ -668,7 +666,7 @@ def input_info(year_sheet, info, date):
 
 
 def create_sheet(workbook, sheet_to_copy, new_sheet_name):
-    """Create a new sheet by copying and modifying the latest one.
+    """Create a new sheet by copying and modifying a different one.
 
     Args:
         workbook (obj): openpyxl workbook object.
@@ -704,7 +702,7 @@ def first_blank_row(sheet):
 
 
 def main():
-    """Coordinate Updating of Goodreads account and writing to spreadsheet."""
+    """Coordinate updating of Goodreads account and writing to spreadsheet."""
     args = parse_arguments()
 
     if 'gui' in args:
