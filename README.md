@@ -49,8 +49,7 @@ python3 ligrarian.py gui
 
 There are two different tabs on the GUI corresponding to the two other operational modes. Enter all non-optional information, press submit and Ligrarian will get to work.
 
-### Note:
-Your Email is saved to the config.ini file in the same directory, so you won't have to enter it every time, and your Password can be saved by checking the 'Save Password' box at the end of the first row of the GUI. Once saved, your Password will appear as asterixs in future GUI sessions.
+> *__Note__*: *Your Email is saved to the config.ini file in the same directory, so you won't have to enter it every time, and your Password can be saved by checking the 'Save Password' box at the end of the first row of the GUI. Once saved, your Password will appear as asterixs in future GUI sessions.*
 
 The other two modes are soley driven by the command-line. If your Email and/or Password aren't saved you will be prompted for that information, asked if you would like to save your password (your email is saved by default) and finally, if you decided not to save your password, asked if you want to remove the save password prompt for future sessions. These settings, the path to the spreadsheet and some GUI defaults can be modified within the settings.ini file.
 
@@ -77,7 +76,7 @@ python3 ligrarian.py url https://Goodreads.com/ExampleBookUrl t 4
 
 Would mark the book at the given URL as having been read today and it would be rated 4 stars.
 
-### Note that:
+### Argument Notes:
 * The first letter of the operational mode can be used instead of the full word i.e. 'g' rather than 'gui'
 * The search terms must be enclosed in quotes if multiple words are used
 * The first letter of the format can be used i.e. (p)aperback, (h)ardcover, (k)indle or (e)book
