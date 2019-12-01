@@ -47,9 +47,9 @@ GUI mode loads the Ligrarian GUI and can be invoked by:
 python3 ligrarian.py gui
 ```
 
-There are two different tabs on the GUI corresponding to the two other operational modes. Enter all non-optional information, press submit and Ligrarian will get to work.
+There are two different modes on the GUI corresponding to the two other operational modes. The GUI defaults to 'Search Mode' but can be switched to 'URL Mode' via a labelled checkbutton. Enter all non-optional information, press submit and Ligrarian will get to work.
 
-> *__Note__*: *Your Email is saved to the config.ini file in the same directory, so you won't have to enter it every time, and your Password can be saved by checking the 'Save Password' box at the end of the first row of the GUI. Once saved, your Password will appear as asterixs in future GUI sessions.*
+> *__Note__*: *Your Email is saved to the config.ini file in the same directory, so you won't have to enter it every time, and your Password can be saved (insecurely in plaintext) by checking the 'Save Password' box at the end of the first row of the GUI. Once saved, your Password will appear as asterixs in future GUI sessions.*
 
 The other two modes are soley driven by the command-line. If your Email and/or Password aren't saved you will be prompted for that information, asked if you would like to save your password (your email is saved by default) and finally, if you decided not to save your password, asked if you want to remove the save password prompt for future sessions. These settings, the path to the spreadsheet and some GUI defaults can be modified within the settings.ini file.
 
