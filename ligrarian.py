@@ -676,6 +676,13 @@ def main():
             write_config(details['email'], details['password'], 'no')
         else:
             write_config(details['email'], "", 'yes')
+
+        if gui.mode:
+            details['url'] = details['main']
+        else:
+            details['search'] = details['main']
+        del details['main']
+
     else:
         details = args
         details['email'], details['password'] = user_info()
@@ -690,11 +697,10 @@ def main():
     driver.implicitly_wait(10)
 
     goodreads_login(driver, details['email'], details['password'])
-    if gui.mode:
-        url = details['main']
-        driver.get(url)
+    if 'url' in details:
+        driver.get(details['url'])
     else:
-        goodreads_find(driver, details['main'])
+        goodreads_find(driver, details['search'])
         url = goodreads_filter(driver, details['format'])
 
     shelves = goodreads_get_shelves(driver, details['rating'])
