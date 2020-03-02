@@ -698,7 +698,8 @@ def main():
 
     goodreads_login(driver, details['email'], details['password'])
     if 'url' in details:
-        driver.get(details['url'])
+        url = details['url']
+        driver.get(url)
     else:
         goodreads_find(driver, details['search'])
         url = goodreads_filter(driver, details['format'])
