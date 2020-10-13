@@ -38,6 +38,7 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
@@ -692,9 +693,18 @@ def main():
         elif details['date'].lower() == 'y':
             details['date'] = get_date_str(True)
 
-    print('Opening a computer controlled browser and updating Goodreads...')
-    driver = webdriver.Firefox()
-    driver.implicitly_wait(10)
+    run_headless = get_setting('Settings', 'Headless')
+    if run_headless:
+        print(('Opening a headless computer controlled browser and updating '
+                'Goodreads'))
+        options = Options()
+        options.headless = True
+        driver = webdriver.Firefox(options=options)
+        driver.implicitly_wait(10)
+    else:
+        print('Opening a computer controlled browser and updating Goodreads')
+        driver = webdriver.Firefox()
+        driver.implicitly_wait(10)
 
     goodreads_login(driver, details['email'], details['password'])
     if 'url' in details:
