@@ -83,7 +83,7 @@ class Gui:
 
         # Widgets
         self.email = tk.Entry(self.master, width=20)
-        email = get_setting('User', 'Email')
+        email = get_setting('user', 'email')
         if email:
             self.email.insert(0, email)
         else:
@@ -91,7 +91,7 @@ class Gui:
         self.email.grid(row=2, column=2, columnspan=3,
                         sticky='W', pady=(30, 5))
 
-        password = get_setting('User', 'Password')
+        password = get_setting('user', 'password')
         self.password = tk.Entry(self.master, width=20)
         if password:
             self.password.insert(0, '********')
@@ -122,7 +122,7 @@ class Gui:
 
         formats = ("Paperback", "Hardback", "Kindle", "Ebook",)
         self.format = tk.StringVar()
-        self.format.set(get_setting("Defaults", "Format"))
+        self.format.set(get_setting("defaults", "format"))
         self.format_menu = tk.OptionMenu(self.master, self.format, *formats)
         self.format_menu.grid(row=6, column=2, columnspan=3,
                               sticky='W', pady=5)
@@ -142,7 +142,7 @@ class Gui:
 
         stars = ("1", "2", "3", "4", "5")
         self.rating = tk.StringVar()
-        self.rating.set(get_setting("Defaults", "Rating"))
+        self.rating.set(get_setting("defaults", "rating"))
         rating_menu = tk.OptionMenu(self.master, self.rating, *stars)
         rating_menu.grid(row=7, column=2, sticky='W', pady=5)
 
@@ -180,7 +180,7 @@ class Gui:
         self.mode = self.mode.get()
         password = self.password.get()
         if password == '********':
-            password = get_setting('User', 'Password')
+            password = get_setting('user', 'password')
 
         self.info = {
             'email': self.email.get(),
@@ -292,13 +292,13 @@ def user_info():
         Tuple containing prompted for email and password.
 
     """
-    email = get_setting('User', 'Email')
+    email = get_setting('user', 'email')
     if not email:
         email = input('Email: ')
-    password = get_setting('User', 'Password')
+    password = get_setting('user', 'password')
     if not password:
         password = input('Password: ')
-        if get_setting('Settings', 'Prompt') == 'no':
+        if get_setting('settings', 'prompt') == 'no':
             return (email, password)
 
         save = input("Save Password?(y/n): ")
@@ -314,6 +314,20 @@ def user_info():
     return (email, password)
 
 
+def write_initial_config():
+    """."""
+    config = configparser.ConfigParser()
+    config['user'] = {'email': '',
+                      'password': ''}
+    config['settings'] = {'prompt': 'no',
+                          'path': './Ligrarian.xlsx',
+                          'headless': 'False'}
+    config['defaults'] = {'format': 'paperback',
+                          'rating': '3'}
+    with open('settings.ini', 'w') as configfile:
+        config.write(configfile)
+
+
 def write_config(email, password, prompt):
     """Write configuration file.
 
@@ -325,9 +339,9 @@ def write_config(email, password, prompt):
     """
     config = configparser.ConfigParser()
     config.read('settings.ini')
-    config.set('User', 'Email', email)
-    config.set('User', 'Password', password)
-    config.set('Settings', 'Prompt', prompt)
+    config.set('user', 'email', email)
+    config.set('user', 'password', password)
+    config.set('settings', 'prompt', prompt)
 
     with open('settings.ini', 'w') as configfile:
         config.write(configfile)
@@ -604,7 +618,7 @@ def input_info(year_sheet, info, date):
         date (str): Date to input in the 'Read date' column.
 
     """
-    path = get_setting('Settings', 'Path')
+    path = get_setting('settings', 'path')
     workbook = openpyxl.load_workbook(path)
 
     existing_sheets = workbook.sheetnames
@@ -665,6 +679,10 @@ def first_blank_row(sheet):
 def main():
     """Coordinate updating of Goodreads account and writing to spreadsheet."""
     args = parse_arguments()
+    try:
+        test_config = open("settings.ini")
+    except FileNotFoundError:
+        write_initial_config()
 
     if 'gui' in args:
         root = tk.Tk()
@@ -693,7 +711,7 @@ def main():
         elif details['date'].lower() == 'y':
             details['date'] = get_date_str(True)
 
-    run_headless = get_setting('Settings', 'Headless')
+    run_headless = get_setting('settings', 'headless')
     if run_headless:
         print(('Opening a headless computer controlled browser and updating '
                 'Goodreads'))
