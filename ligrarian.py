@@ -267,21 +267,24 @@ def parse_arguments():
     return vars(args)
 
 
-def get_setting(section, option):
+def get_setting(section, option, boolean=False):
     """Return the value associated with option under section in settings.
 
     Args:
         section (str): The section the information is under in the config.
         option (str): The option to retrieve and return the value of.
+        boolean (bool): Whether the information to retrieve is a boolean value
 
     Returns:
-        String representing the value retrieved by the args.
+        String or boolean representing the value retrieved by the args.
 
     """
     config = configparser.ConfigParser()
     config.read('settings.ini')
-    value = config.get(section, option)
-
+    if boolean:
+        value = config.getboolean(section, option)
+    else:
+        value = config.get(section, option)
     return value
 
 
@@ -298,31 +301,31 @@ def user_info():
     password = get_setting('user', 'password')
     if not password:
         password = input('Password: ')
-        if get_setting('settings', 'prompt') == 'no':
+        if not get_setting('settings', 'prompt', boolean=True):
             return (email, password)
 
         save = input("Save Password?(y/n): ")
         if save.lower() == 'y':
-            write_config(email, password, 'yes')
+            write_config(email, password, 'True')
         elif save.lower() == 'n':
             disable = input("Disable save Password prompt?(y/n): ")
             if disable.lower() == 'y':
-                write_config(email, "", 'no')
+                write_config(email, "", 'False')
             else:
-                write_config(email, "", 'yes')
+                write_config(email, "", 'True')
 
     return (email, password)
 
 
 def write_initial_config():
-    """."""
+    """Writes the inital, default settings.ini file."""
     config = configparser.ConfigParser()
     config['user'] = {'email': '',
                       'password': ''}
-    config['settings'] = {'prompt': 'no',
+    config['settings'] = {'prompt': 'False',
                           'path': './Ligrarian.xlsx',
                           'headless': 'False'}
-    config['defaults'] = {'format': 'paperback',
+    config['defaults'] = {'format': 'Paperback',
                           'rating': '3'}
     with open('settings.ini', 'w') as configfile:
         config.write(configfile)
@@ -711,7 +714,7 @@ def main():
         elif details['date'].lower() == 'y':
             details['date'] = get_date_str(True)
 
-    run_headless = get_setting('settings', 'headless')
+    run_headless = get_setting('settings', 'headless', boolean=True)
     if run_headless:
         print(('Opening a headless computer controlled browser and updating '
                 'Goodreads'))
