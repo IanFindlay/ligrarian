@@ -306,7 +306,7 @@ def user_info():
     """Prompt for missing user information and manage the password prompt.
 
     Returns:
-        Tuple containing prompted for email and password.
+        Tuple containing prompted for email, password and optionally prompt.
 
     """
     email = get_setting('user', 'email')
@@ -320,13 +320,13 @@ def user_info():
 
         save = input("Save Password?(y/n): ")
         if save.lower() == 'y':
-            write_config(email, password, 'True')
+            write_config(email, password, True)
         elif save.lower() == 'n':
             disable = input("Disable save Password prompt?(y/n): ")
             if disable.lower() == 'y':
-                write_config(email, "", 'False')
+                write_config(email, "", False)
             else:
-                write_config(email, "", 'True')
+                write_config(email, "", True)
 
     return (email, password)
 
