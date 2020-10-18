@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-import unittest.mock as mock
 import pytest
+import unittest.mock as mock
 
 import ligrarian
 
@@ -153,18 +153,23 @@ class TestUserInfo:
         mocked_write.assert_called_once_with('email', '', True)
 
 
+class TestWriteInitialConfig:
+    """Test write_initial_config writes config to correct file."""
 
+    @mock.patch('builtins.open', new_callable=mock.mock_open())
+    def test_initial_config_opens_settings_file(self, mock_open_settings):
+        """Should open settings.ini."""
+        ligrarian.write_initial_config()
+        mock_open_settings.assert_called_once_with('settings.ini', 'w')
 
+    @mock.patch('builtins.open', new_callable=mock.mock_open())
+    def test_initial_config_write(self, mock_open_settings):
+        """Should write default config to file.
 
-
-
-
-
-
-
-
-
-
-
-
-
+        ConfigParser writes line by line so checking that a middle call is
+        as expected indicats the entire file has been written as desired.
+        """
+        ligrarian.write_initial_config()
+        written_config = mock_open_settings.return_value.__enter__().write
+        written_middle = written_config.call_args_list[7][0][0]
+        assert written_middle == "headless = False\n"
