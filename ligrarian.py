@@ -267,6 +267,20 @@ def parse_arguments():
     return vars(args)
 
 
+def create_driver():
+    """Create the appropriate driver for the session."""
+    run_headless = get_setting('settings', 'headless', boolean=True)
+    if run_headless:
+        print(('Opening a headless computer controlled browser and updating '
+                'Goodreads'))
+        options = Options()
+        options.headless = True
+        return webdriver.Firefox(options=options)
+    else:
+        print('Opening a computer controlled browser and updating Goodreads')
+        return webdriver.Firefox()
+
+
 def get_setting(section, option, boolean=False):
     """Return the value associated with option under section in settings.
 
@@ -714,19 +728,8 @@ def main():
         elif details['date'].lower() == 'y':
             details['date'] = get_date_str(True)
 
-    run_headless = get_setting('settings', 'headless', boolean=True)
-    if run_headless:
-        print(('Opening a headless computer controlled browser and updating '
-                'Goodreads'))
-        options = Options()
-        options.headless = True
-        driver = webdriver.Firefox(options=options)
-        driver.implicitly_wait(10)
-    else:
-        print('Opening a computer controlled browser and updating Goodreads')
-        driver = webdriver.Firefox()
-        driver.implicitly_wait(10)
-
+    driver = create_driver()
+    driver.implicitly_wait(10)
     goodreads_login(driver, details['email'], details['password'])
     if 'url' in details:
         url = details['url']
