@@ -7,7 +7,7 @@ import ligrarian
 
 
 class TestCreateDriver:
-    """Test the create_driver function.
+    """Test function creates appropriate driver and message.
 
     Testing of the webdriver object is done via capturing the call arguments
     to a mocked webdriver. A call with no arguments is indicative of the
@@ -17,7 +17,7 @@ class TestCreateDriver:
     @mock.patch('ligrarian.get_setting')
     @mock.patch('ligrarian.webdriver.Firefox')
     def test_create_driver(self, mocked_driver, mocked_get):
-        """Test that headless False results in non-headless driver."""
+        """Headless False should create non-headless (no call args) driver."""
         mocked_get.return_value = False
         ligrarian.create_driver()
         assert mocked_driver.call_args == ''
@@ -25,7 +25,7 @@ class TestCreateDriver:
     @mock.patch('ligrarian.get_setting')
     @mock.patch('ligrarian.webdriver.Firefox')
     def test_create_headless_driver(self, mocked_driver, mocked_get):
-        """Test that headless True results in headless driver."""
+        """Headless True should create headless (call args) driver."""
         mocked_get.return_value = True
         ligrarian.create_driver()
         assert mocked_driver.call_args != ''
@@ -33,7 +33,7 @@ class TestCreateDriver:
     @mock.patch('ligrarian.get_setting')
     @mock.patch('ligrarian.webdriver.Firefox')
     def test_create_driver_message(self, mocked_driver, mocked_get, capsys):
-        """Test that headless False results in non-headless message."""
+        """Headless False should print non-headless message."""
         mocked_get.return_value = False
         ligrarian.create_driver()
         captured_stdout = capsys.readouterr()[0]
@@ -43,7 +43,7 @@ class TestCreateDriver:
     @mock.patch('ligrarian.webdriver.Firefox')
     def test_create_driver_headless_message(self, mocked_driver,
                                             mocked_get, capsys):
-        """Test that headless setting results in headless message."""
+        """Headless True should print headless message."""
         mocked_get.return_value = True
         ligrarian.create_driver()
         captured_stdout = capsys.readouterr()[0]
@@ -51,21 +51,23 @@ class TestCreateDriver:
 
 
 class TestGetSetting:
-    """Test that get_setting calls .get or .getboolean correctly."""
+    """Test function calls .get or .getboolean correctly."""
 
     @mock.patch('configparser.ConfigParser.get')
     def test_get_setting(self, mocked_config):
+        """.get should be called with False (default) boolean arg."""
         ligrarian.get_setting('test', 'arbitrary')
         assert mocked_config.called
 
     @mock.patch('configparser.ConfigParser.getboolean')
     def test_get_setting_boolean(self, mocked_config):
+        """.getboolean should be called with True boolean arg."""
         ligrarian.get_setting('test', 'arbitrary', boolean=True)
         assert mocked_config.called
 
 
 class TestUserInfo:
-    """Test user_info returns, prompts for and calls with the right values."""
+    """Test function returns, prompts for and calls with the right values."""
 
     @mock.patch('ligrarian.get_setting')
     def test_set_user_info_returned(self, mocked_get):
@@ -154,13 +156,13 @@ class TestUserInfo:
 
 
 class TestWriteInitialConfig:
-    """Test write_initial_config writes config to correct file."""
+    """Test function writes config correctly and to the correct file."""
 
-    @mock.patch('builtins.open', new_callable=mock.mock_open())
-    def test_initial_config_opens_settings_file(self, mock_open_settings):
-        """Should open settings.ini."""
+    @mock.patch('builtins.open')
+    def test_initial_config_opens_settings_file(self, mock_open):
+        """Should open settings.ini in write mode."""
         ligrarian.write_initial_config()
-        mock_open_settings.assert_called_once_with('settings.ini', 'w')
+        mock_open.assert_called_once_with('settings.ini', 'w')
 
     @mock.patch('builtins.open', new_callable=mock.mock_open())
     def test_initial_config_write(self, mock_open_settings):
@@ -173,3 +175,34 @@ class TestWriteInitialConfig:
         written_config = mock_open_settings.return_value.__enter__().write
         written_middle = written_config.call_args_list[7][0][0]
         assert written_middle == "headless = False\n"
+
+
+class TestWriteConfig:
+    """Test function writes arguments to correct file."""
+
+    @mock.patch('builtins.open')
+    def test_initial_config_opens_settings_file(self, mock_open):
+        """Should open settings.ini in write mode."""
+        ligrarian.write_initial_config()
+        mock_open.assert_called_once_with('settings.ini', 'w')
+
+    @mock.patch('configparser.ConfigParser.set')
+    @mock.patch('builtins.open')
+    def test_write_config_email(self, mock_open, mock_set):
+        """ConfigParser.set should be called with argument email."""
+        ligrarian.write_config("argument email", "password", "prompt")
+        mock_set.assert_any_call("user", "email", "argument email")
+
+    @mock.patch('configparser.ConfigParser.set')
+    @mock.patch('builtins.open')
+    def test_write_config_password(self, mock_open, mock_set):
+        """ConfigParser.set should be called with argument password."""
+        ligrarian.write_config("email", "argument pass", "prompt")
+        mock_set.assert_any_call("user", "password", "argument pass")
+
+    @mock.patch('configparser.ConfigParser.set')
+    @mock.patch('builtins.open')
+    def test_write_config_prompt(self, mock_open, mock_set):
+        """ConfigParser.set should be called with argument prompt."""
+        ligrarian.write_config("email", "password", "argument prompt")
+        mock_set.assert_any_call("settings", "prompt", "argument prompt")
