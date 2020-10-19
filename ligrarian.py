@@ -206,6 +206,28 @@ class Gui:
                                    "fields before marking as read.")
 
 
+def invoke_gui_and_return_details():
+    """."""
+    root = tk.Tk()
+    root.protocol("WM_DELETE_WINDOW", exit)
+    gui = Gui(root)
+    root.mainloop()
+
+    details = gui.info
+    if details['save_choice']:
+        write_config(details['email'], details['password'], 'no')
+    else:
+        write_config(details['email'], "", 'yes')
+
+    if gui.mode:
+        details['url'] = details['main']
+    else:
+        details['search'] = details['main']
+    del details['main']
+
+    return details
+
+
 def get_date_str(yesterday=False):
     """Return a string of today's or yesterday's date.
 
@@ -272,13 +294,12 @@ def create_driver():
     run_headless = get_setting('settings', 'headless', boolean=True)
     if run_headless:
         print(('Opening a headless computer controlled browser and updating '
-                'Goodreads'))
+               'Goodreads'))
         options = Options()
         options.headless = True
         return webdriver.Firefox(options=options)
-    else:
-        print('Opening a computer controlled browser and updating Goodreads')
-        return webdriver.Firefox()
+    print('Opening a computer controlled browser and updating Goodreads')
+    return webdriver.Firefox()
 
 
 def get_setting(section, option, boolean=False):
@@ -689,35 +710,19 @@ def first_blank_row(sheet):
     while data is not None:
         data = sheet.cell(row=input_row, column=1).value
         input_row += 1
-    input_row -= 1
-    return input_row
+    return input_row - 1
 
 
 def main():
     """Coordinate updating of Goodreads account and writing to spreadsheet."""
     args = parse_arguments()
     try:
-        test_config = open("settings.ini")
+        open("settings.ini")
     except FileNotFoundError:
         write_initial_config()
 
     if 'gui' in args:
-        root = tk.Tk()
-        root.protocol("WM_DELETE_WINDOW", exit)
-        gui = Gui(root)
-        root.mainloop()
-
-        details = gui.info
-        if details['save_choice']:
-            write_config(details['email'], details['password'], 'no')
-        else:
-            write_config(details['email'], "", 'yes')
-
-        if gui.mode:
-            details['url'] = details['main']
-        else:
-            details['search'] = details['main']
-        del details['main']
+        details = invoke_gui_and_return_details()
 
     else:
         details = args
