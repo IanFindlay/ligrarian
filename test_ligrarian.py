@@ -54,16 +54,18 @@ class TestGetSetting:
     """Test function calls .get or .getboolean correctly."""
 
     @mock.patch('configparser.ConfigParser.get')
-    def test_get_setting(self, mocked_config):
+    @mock.patch('configparser.ConfigParser.read')
+    def test_get_setting(self, mocked_read, mocked_config):
         """.get should be called with False (default) boolean arg."""
         ligrarian.get_setting('test', 'arbitrary')
-        assert mocked_config.called
+        mocked_config.assert_called()
 
     @mock.patch('configparser.ConfigParser.getboolean')
-    def test_get_setting_boolean(self, mocked_config):
+    @mock.patch('configparser.ConfigParser.read')
+    def test_get_setting_boolean(self, mocked_read, mocked_config):
         """.getboolean should be called with True boolean arg."""
         ligrarian.get_setting('test', 'arbitrary', boolean=True)
-        assert mocked_config.called
+        mocked_config.assert_called()
 
 
 class TestUserInfo:
