@@ -206,6 +206,28 @@ class Gui:
                                    "fields before marking as read.")
 
 
+def invoke_gui_and_return_details():
+    """."""
+    root = tk.Tk()
+    root.protocol("WM_DELETE_WINDOW", exit)
+    gui = Gui(root)
+    root.mainloop()
+
+    details = gui.info
+    if details['save_choice']:
+        write_config(details['email'], details['password'], 'no')
+    else:
+        write_config(details['email'], "", 'yes')
+
+    if gui.mode:
+        details['url'] = details['main']
+    else:
+        details['search'] = details['main']
+    del details['main']
+
+    return details
+
+
 def get_date_str(yesterday=False):
     """Return a string of today's or yesterday's date.
 
@@ -267,6 +289,19 @@ def parse_arguments():
     return vars(args)
 
 
+def create_driver():
+    """Create the appropriate driver for the session."""
+    run_headless = get_setting('settings', 'headless', boolean=True)
+    if run_headless:
+        print(('Opening a headless computer controlled browser and updating '
+               'Goodreads'))
+        options = Options()
+        options.headless = True
+        return webdriver.Firefox(options=options)
+    print('Opening a computer controlled browser and updating Goodreads')
+    return webdriver.Firefox()
+
+
 def get_setting(section, option, boolean=False):
     """Return the value associated with option under section in settings.
 
@@ -292,7 +327,7 @@ def user_info():
     """Prompt for missing user information and manage the password prompt.
 
     Returns:
-        Tuple containing prompted for email and password.
+        Tuple containing prompted for email, password and optionally prompt.
 
     """
     email = get_setting('user', 'email')
@@ -306,13 +341,13 @@ def user_info():
 
         save = input("Save Password?(y/n): ")
         if save.lower() == 'y':
-            write_config(email, password, 'True')
+            write_config(email, password, True)
         elif save.lower() == 'n':
             disable = input("Disable save Password prompt?(y/n): ")
             if disable.lower() == 'y':
-                write_config(email, "", 'False')
+                write_config(email, "", False)
             else:
-                write_config(email, "", 'True')
+                write_config(email, "", True)
 
     return (email, password)
 
@@ -675,35 +710,19 @@ def first_blank_row(sheet):
     while data is not None:
         data = sheet.cell(row=input_row, column=1).value
         input_row += 1
-    input_row -= 1
-    return input_row
+    return input_row - 1
 
 
 def main():
     """Coordinate updating of Goodreads account and writing to spreadsheet."""
     args = parse_arguments()
     try:
-        test_config = open("settings.ini")
+        open("settings.ini")
     except FileNotFoundError:
         write_initial_config()
 
     if 'gui' in args:
-        root = tk.Tk()
-        root.protocol("WM_DELETE_WINDOW", exit)
-        gui = Gui(root)
-        root.mainloop()
-
-        details = gui.info
-        if details['save_choice']:
-            write_config(details['email'], details['password'], 'no')
-        else:
-            write_config(details['email'], "", 'yes')
-
-        if gui.mode:
-            details['url'] = details['main']
-        else:
-            details['search'] = details['main']
-        del details['main']
+        details = invoke_gui_and_return_details()
 
     else:
         details = args
@@ -714,19 +733,8 @@ def main():
         elif details['date'].lower() == 'y':
             details['date'] = get_date_str(True)
 
-    run_headless = get_setting('settings', 'headless', boolean=True)
-    if run_headless:
-        print(('Opening a headless computer controlled browser and updating '
-                'Goodreads'))
-        options = Options()
-        options.headless = True
-        driver = webdriver.Firefox(options=options)
-        driver.implicitly_wait(10)
-    else:
-        print('Opening a computer controlled browser and updating Goodreads')
-        driver = webdriver.Firefox()
-        driver.implicitly_wait(10)
-
+    driver = create_driver()
+    driver.implicitly_wait(10)
     goodreads_login(driver, details['email'], details['password'])
     if 'url' in details:
         url = details['url']
