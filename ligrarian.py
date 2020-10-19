@@ -206,19 +206,35 @@ class Gui:
                                    "fields before marking as read.")
 
 
-def invoke_gui_and_return_details():
-    """."""
+def create_gui():
+    """Create GUI instance and return it."""
     root = tk.Tk()
     root.protocol("WM_DELETE_WINDOW", exit)
     gui = Gui(root)
     root.mainloop()
 
+    return gui
+
+
+def send_gui_info_to_write(gui):
+    """Parse gui details dictionary and send values to write_config.
+    Args:
+        gui (class): Instance of GUI class.
+
+    Returns:
+        details (dict): Dictionary of info inputted to gui instance.
+    """
     details = gui.info
     if details['save_choice']:
-        write_config(details['email'], details['password'], 'no')
+        write_config(details['email'], details['password'], "False")
     else:
-        write_config(details['email'], "", 'yes')
+        write_config(details['email'], "", "True")
 
+    return details
+
+
+def gui_mode_details_edits(gui, details):
+    """Assess gui mode and edit details dictionary accordingly."""
     if gui.mode:
         details['url'] = details['main']
     else:
@@ -341,13 +357,13 @@ def user_info():
 
         save = input("Save Password?(y/n): ")
         if save.lower() == 'y':
-            write_config(email, password, True)
+            write_config(email, password, "True")
         elif save.lower() == 'n':
             disable = input("Disable save Password prompt?(y/n): ")
             if disable.lower() == 'y':
-                write_config(email, "", False)
+                write_config(email, "", "False")
             else:
-                write_config(email, "", True)
+                write_config(email, "", "True")
 
     return (email, password)
 
@@ -722,7 +738,9 @@ def main():
         write_initial_config()
 
     if 'gui' in args:
-        details = invoke_gui_and_return_details()
+        gui_instance = create_gui()
+        details = send_gui_info_to_write(gui_instance)
+        gui_mode_details_edits(gui_instance, details)
 
     else:
         details = args
