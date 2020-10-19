@@ -216,7 +216,7 @@ class TestCategoryAndGenre:
     def test_category_and_genre_nonfiction(self):
         """Nonfiction in shelves should lead to Nonfiction category return."""
         assert ligrarian.category_and_genre(
-                ["Nonfiction", "Genre"]) == ("Nonfiction", "Genre")
+                ["Genre", "Nonfiction"]) == ("Nonfiction", "Genre")
 
     def test_category_and_genre_fiction(self):
         """No Nonfiction in shelves should lead to Fiction category return."""
