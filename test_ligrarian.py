@@ -183,7 +183,7 @@ class TestWriteConfig:
     """Test function writes arguments to correct file."""
 
     @mock.patch('builtins.open')
-    def test_initial_config_opens_settings_file(self, mock_open):
+    def test_write_config_opens_settings_file(self, mock_open):
         """Should open settings.ini in write mode."""
         ligrarian.write_initial_config()
         mock_open.assert_called_once_with('settings.ini', 'w')
@@ -208,3 +208,18 @@ class TestWriteConfig:
         """ConfigParser.set should be called with argument prompt."""
         ligrarian.write_config("email", "password", "argument prompt")
         mock_set.assert_any_call("settings", "prompt", "argument prompt")
+
+
+class TestCategoryAndGenre:
+    """Test function returns right category, genre tuple."""
+
+    def test_category_and_genre_nonfiction(self):
+        """Nonfiction in shelves should lead to Nonfiction category return."""
+        assert ligrarian.category_and_genre(
+                ["Nonfiction", "Genre"]) == ("Nonfiction", "Genre")
+
+    def test_category_and_genre_fiction(self):
+        """No Nonfiction in shelves should lead to Fiction category return."""
+        assert ligrarian.category_and_genre(
+                ["No Category", "Genre"]) == ("Fiction", "No Category")
+
