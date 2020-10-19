@@ -6,6 +6,80 @@ import unittest.mock as mock
 import ligrarian
 
 
+class TestCreateGUI:
+    """Test function creates and returns GUI instance correctly."""
+
+    @mock.patch('ligrarian.tk')
+    def test_tk_called(self, mock_tk):
+        """tk.Tk() create tkinter instance and should be called."""
+        ligrarian.create_gui()
+        mock_tk.Tk.assert_called_once()
+
+    @mock.patch('ligrarian.tk')
+    def test_gui_instance_created(self, mock_tk):
+        """Returned object should be instance of GUI class."""
+        gui_instance = ligrarian.create_gui()
+        assert isinstance(gui_instance, ligrarian.Gui)
+
+
+class TestSendGuiInfoToWrite:
+    """Test function sends correct args from GUI instance to write_config."""
+
+    @mock.patch('ligrarian.write_config')
+    def test_save_true_sends_password_to_write(self, mock_write):
+        """Password should be part of call to write_config."""
+        mock_gui = mock.MagicMock()
+        mock_gui.info = {'save_choice': True, 'email': 'email',
+                         'password': 'pass'}
+        ligrarian.send_gui_info_to_write(mock_gui)
+        mock_write.assert_called_once_with('email', 'pass', 'False')
+
+    @mock.patch('ligrarian.write_config')
+    def test_save_false_no_password_to_write(self, mock_write):
+        """Password should be passed as empty string."""
+        mock_gui = mock.MagicMock()
+        mock_gui.info = {'save_choice': False, 'email': 'email',
+                         'password': 'pass'}
+        ligrarian.send_gui_info_to_write(mock_gui)
+        mock_write.assert_called_once_with('email', '', 'True')
+
+
+class TestGuiModeDetailsEdits:
+    """Test funtion modifies gui.info and returns correctly."""
+
+    def test_mode_true_moves_main_to_url(self):
+        """True should lead to info['main'] copied to info['url']."""
+        mock_gui = mock.MagicMock()
+        mock_gui.mode = True
+        mock_gui.info = {'main': 'www'}
+        info = ligrarian.gui_mode_details_edits(mock_gui)
+        assert info['url'] == 'www'
+
+    def test_mode_false_moves_main_to_search(self):
+        """False should lead to info['main'] copied to info['search']."""
+        mock_gui = mock.MagicMock()
+        mock_gui.mode = False
+        mock_gui.info = {'main': 'search string'}
+        info = ligrarian.gui_mode_details_edits(mock_gui)
+        assert info['search'] == 'search string'
+
+    def test_main_deleted(self):
+        """gui.info['main'] should be deleted."""
+        mock_gui = mock.MagicMock()
+        mock_gui.mode = True
+        mock_gui.info = {'main': 'copied then deleted'}
+        info = ligrarian.gui_mode_details_edits(mock_gui)
+        assert 'main' not in info
+
+    def test_info_dict_returned(self):
+        """gui.info should be returned."""
+        mock_gui = mock.MagicMock()
+        mock_gui.mode = True
+        mock_gui.info = {'main': 'copied then deleted'}
+        info = ligrarian.gui_mode_details_edits(mock_gui)
+        assert info == {'url': 'copied then deleted'}
+
+
 class TestCreateDriver:
     """Test function creates appropriate driver and message.
 
@@ -120,10 +194,10 @@ class TestUserInfo:
     @mock.patch('ligrarian.get_setting')
     def test_save_writes_password(self, mocked_get, mocked_in, mocked_write):
         """Password should be saved is prompted answer is y."""
-        mocked_get.side_effect = ['email', '', True]
+        mocked_get.side_effect = ['email', '', "True"]
         mocked_in.side_effect = ['inputted pass', 'y']
         ligrarian.user_info()
-        mocked_write.assert_called_once_with('email', 'inputted pass', True)
+        mocked_write.assert_called_once_with('email', 'inputted pass', "True")
 
     @mock.patch('ligrarian.write_config')
     @mock.patch('ligrarian.input')
@@ -131,30 +205,30 @@ class TestUserInfo:
     def test_save_no_does_not_write_password(self, mocked_get,
                                              mocked_in, mocked_write):
         """No password should be saved if prompted answer is n."""
-        mocked_get.side_effect = ['email', '', True]
+        mocked_get.side_effect = ['email', '', "True"]
         mocked_in.side_effect = ['inputted pass', 'n', 'n']
         ligrarian.user_info()
-        mocked_write.assert_called_once_with('email', '', True)
+        mocked_write.assert_called_once_with('email', '', "True")
 
     @mock.patch('ligrarian.write_config')
     @mock.patch('ligrarian.input')
     @mock.patch('ligrarian.get_setting')
     def test_disable_prompt_y(self, mocked_get, mocked_in, mocked_write):
         """Prompt set to False if disabled prompt answered with y."""
-        mocked_get.side_effect = ['email', '', True]
+        mocked_get.side_effect = ['email', '', "True"]
         mocked_in.side_effect = ['inputted pass', 'n', 'y']
         ligrarian.user_info()
-        mocked_write.assert_called_once_with('email', '', False)
+        mocked_write.assert_called_once_with('email', '', "False")
 
     @mock.patch('ligrarian.write_config')
     @mock.patch('ligrarian.input')
     @mock.patch('ligrarian.get_setting')
     def test_disable_prompt_n(self, mocked_get, mocked_in, mocked_write):
         """Prompt set to True if disabled prompt answered with n."""
-        mocked_get.side_effect = ['email', '', True]
+        mocked_get.side_effect = ['email', '', "True"]
         mocked_in.side_effect = ['inputted pass', 'n', 'n']
         ligrarian.user_info()
-        mocked_write.assert_called_once_with('email', '', True)
+        mocked_write.assert_called_once_with('email', '', "True")
 
 
 class TestWriteInitialConfig:

@@ -219,29 +219,27 @@ def create_gui():
 def send_gui_info_to_write(gui):
     """Parse gui details dictionary and send values to write_config.
     Args:
-        gui (class): Instance of GUI class.
-
-    Returns:
-        details (dict): Dictionary of info inputted to gui instance.
+        gui (obj): Instance of GUI class.
     """
-    details = gui.info
-    if details['save_choice']:
-        write_config(details['email'], details['password'], "False")
+    if gui.info['save_choice']:
+        write_config(gui.info['email'], gui.info['password'], "False")
     else:
-        write_config(details['email'], "", "True")
-
-    return details
+        write_config(gui.info['email'], "", "True")
 
 
-def gui_mode_details_edits(gui, details):
-    """Assess gui mode and edit details dictionary accordingly."""
+def gui_mode_details_edits(gui):
+    """Assess gui mode and edit details dictionary accordingly.
+
+    Args:
+        gui (obj): Instance of GUI class.
+    """
     if gui.mode:
-        details['url'] = details['main']
+        gui.info['url'] = gui.info['main']
     else:
-        details['search'] = details['main']
-    del details['main']
+        gui.info['search'] = gui.info['main']
+    del gui.info['main']
 
-    return details
+    return gui.info
 
 
 def get_date_str(yesterday=False):
@@ -739,8 +737,8 @@ def main():
 
     if 'gui' in args:
         gui_instance = create_gui()
-        details = send_gui_info_to_write(gui_instance)
-        gui_mode_details_edits(gui_instance, details)
+        send_gui_info_to_write(gui_instance)
+        details = gui_mode_details_edits(gui_instance)
 
     else:
         details = args
