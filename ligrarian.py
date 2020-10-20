@@ -264,8 +264,8 @@ def get_date_str(yesterday=False):
     """
     today_datetime = dt.now()
     if yesterday:
-        return dt.strftime(today_datetime - timedelta(1), '%d/%m/%y')
-    return dt.strftime(today_datetime, '%d/%m/%y')
+        return dt.strftime(today_datetime - timedelta(1), '%d/%m/%Y')
+    return dt.strftime(today_datetime, '%d/%m/%Y')
 
 
 def parse_arguments():
@@ -514,7 +514,7 @@ def goodreads_date_input(driver, date_done, reread):
     new_read_code = reread_codes[-1][19:]
 
     # Date Formatting and Selection
-    year = '20' + date_done[6:]
+    year = date_done[6:]
     month = date_done[3:5].lstrip('0')
     day = date_done[:2].lstrip('0')
 
@@ -704,12 +704,12 @@ def first_blank_row(sheet):
         sheet (obj): openpyxl sheet object to find first blank row of.
 
     """
-    input_row = 1
-    data = ''
-    while data is not None:
-        data = sheet.cell(row=input_row, column=1).value
+    input_row = 0
+    while True:
         input_row += 1
-    return input_row - 1
+        if not sheet.cell(row=input_row, column=1).value:
+            break
+    return input_row
 
 
 def main():

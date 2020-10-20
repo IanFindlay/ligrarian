@@ -6,41 +6,6 @@ import unittest.mock as mock
 import ligrarian
 
 
-class TestCreateDriver:
-    """Test function creates appropriate driver and message.
-
-    Testing of the webdriver object is done via capturing the call arguments
-    to a mocked webdriver. A call with no arguments is indicative of the
-    default, non-headless webdriver.
-    """
-
-    @mock.patch('ligrarian.webdriver.Firefox')
-    def test_create_driver(self, mocked_driver):
-        """Headless False should create non-headless (no call args) driver."""
-        ligrarian.create_driver(False)
-        assert mocked_driver.call_args == ''
-
-    @mock.patch('ligrarian.webdriver.Firefox')
-    def test_create_headless_driver(self, mocked_driver):
-        """Headless True should create headless (call args) driver."""
-        ligrarian.create_driver(True)
-        assert mocked_driver.call_args != ''
-
-    @mock.patch('ligrarian.webdriver.Firefox')
-    def test_create_driver_message(self, mocked_driver, capsys):
-        """Headless False should print non-headless message."""
-        ligrarian.create_driver(False)
-        captured_stdout = capsys.readouterr()[0]
-        assert "headless" not in captured_stdout
-
-    @mock.patch('ligrarian.webdriver.Firefox')
-    def test_create_driver_headless_message(self, mocked_driver, capsys):
-        """Headless True should print headless message."""
-        ligrarian.create_driver(True)
-        captured_stdout = capsys.readouterr()[0]
-        assert "headless" in captured_stdout
-
-
 class TestRetrieveSettings:
     """Test function opens .ini and retrieves and processes values right."""
 
@@ -65,6 +30,21 @@ class TestRetrieveSettings:
         mock_parser.return_value.items.return_value = [('prompt', 'True')]
         settings = ligrarian.retrieve_settings()
         assert settings == {'prompt': True}
+
+
+class TestGetDateString:
+    """Function gets, modifies and returns correct date."""
+
+    def test_today_returned(self):
+        """Same as strftime datetime.datetime.now()."""
+        formatted_now = ligrarian.dt.strftime(ligrarian.dt.now(), '%d/%m/%Y')
+        assert ligrarian.get_date_str() == formatted_now
+
+    def test_yesterday_returned(self):
+        """Same as strftime of datetime.datetime.now() - timedelta(1) ."""
+        yesterdays_date = ligrarian.dt.now() - ligrarian.timedelta(1)
+        formatted_date = ligrarian.dt.strftime(yesterdays_date, '%d/%m/%Y')
+        assert ligrarian.get_date_str(yesterday=True) == formatted_date
 
 
 class TestCheckAndPromptForEmailPassword:
@@ -211,18 +191,3 @@ class TestWriteConfig:
         mock_parser.return_value.set.assert_any_call(
                 "settings", "prompt", "argument prompt"
         )
-
-
-class TestCategoryAndGenre:
-    """Test function returns right category, genre tuple."""
-
-    def test_category_and_genre_nonfiction(self):
-        """Nonfiction in shelves should lead to Nonfiction category return."""
-        assert ligrarian.category_and_genre(
-                ["Genre", "Nonfiction"]) == ("Nonfiction", "Genre")
-
-    def test_category_and_genre_fiction(self):
-        """No Nonfiction in shelves should lead to Fiction category return."""
-        assert ligrarian.category_and_genre(
-                ["No Category", "Genre"]) == ("Fiction", "No Category")
-
