@@ -47,7 +47,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 class Gui:
     """Acts as the base of the GUI and contains the assoicated methods."""
 
-    def __init__(self, master):
+    def __init__(self, master, settings):
         """Gui class constructor to initialise Gui object.
 
         Args:
@@ -57,6 +57,7 @@ class Gui:
         self.master = master
         self.master.title("Ligrarian")
         self.master.geometry('665x560')
+        self.settings = settings
         self.info = {}
 
         # Labels
@@ -83,7 +84,7 @@ class Gui:
 
         # Widgets
         self.email = tk.Entry(self.master, width=20)
-        email = get_setting('user', 'email')
+        email = self.settings['email']
         if email:
             self.email.insert(0, email)
         else:
@@ -91,8 +92,8 @@ class Gui:
         self.email.grid(row=2, column=2, columnspan=3,
                         sticky='W', pady=(30, 5))
 
-        password = get_setting('user', 'password')
         self.password = tk.Entry(self.master, width=20)
+        password = self.settings['password']
         if password:
             self.password.insert(0, '********')
         else:
@@ -122,7 +123,7 @@ class Gui:
 
         formats = ("Paperback", "Hardback", "Kindle", "Ebook",)
         self.format = tk.StringVar()
-        self.format.set(get_setting("defaults", "format"))
+        self.format.set(self.settings["format"])
         self.format_menu = tk.OptionMenu(self.master, self.format, *formats)
         self.format_menu.grid(row=6, column=2, columnspan=3,
                               sticky='W', pady=5)
@@ -142,7 +143,7 @@ class Gui:
 
         stars = ("1", "2", "3", "4", "5")
         self.rating = tk.StringVar()
-        self.rating.set(get_setting("defaults", "rating"))
+        self.rating.set(self.settings["rating"])
         rating_menu = tk.OptionMenu(self.master, self.rating, *stars)
         rating_menu.grid(row=7, column=2, sticky='W', pady=5)
 
@@ -176,16 +177,17 @@ class Gui:
         self.date.insert(0, get_date_str(yesterday))
 
     def parse_input(self):
-        """Create input dictionary and test if required info has been given."""
+        """Create input dictionary and test required info has been given."""
         self.mode = self.mode.get()
+        self.settings['email'] = self.email.get()
         password = self.password.get()
+        if save_choice.get():
+            self.settings['password'] = password
+
         if password == '********':
-            password = get_setting('user', 'password')
+            password = self.settings['password']
 
         self.info = {
-            'email': self.email.get(),
-            'password': password,
-            'save_choice': self.save_choice.get(),
             'main': self.main.get(),
             'date': self.date.get(),
             'format': self.format.get(),
@@ -194,8 +196,8 @@ class Gui:
         }
 
         try:
-            assert self.info['email'] != 'Email'
-            assert self.info['password'] != 'Password'
+            assert self.settings['email'] != 'Email'
+            assert self.settings['password'] != 'Password'
             assert self.info['main']
             if not self.mode:
                 assert self.info['format']
@@ -203,28 +205,36 @@ class Gui:
 
         except AssertionError:
             messagebox.showwarning(message="Complete all non-optional "
-                                   "fields before marking as read.")
+                                   "fields before marking as read."
+            )
 
 
-def create_gui():
+def retrieve_settings():
+    """Retrieve settings from .ini and return values as dictionary.
+
+    Returns:
+        settings (dict): Dictionary with option: value format.
+    """
+    config = configparser.ConfigParser()
+    config.read('settings.ini')
+    settings = {}
+    for section in config.sections():
+        for key, value in config.items(section):
+            if key in ['prompt', 'headless']:
+                value = bool(value)
+            settings[key] = value
+
+    return settings
+
+
+def create_gui(settings_dict):
     """Create GUI instance and return it."""
     root = tk.Tk()
     root.protocol("WM_DELETE_WINDOW", exit)
-    gui = Gui(root)
+    gui = Gui(root, settings_dict)
     root.mainloop()
 
     return gui
-
-
-def send_gui_info_to_write(gui):
-    """Parse gui details dictionary and send values to write_config.
-    Args:
-        gui (obj): Instance of GUI class.
-    """
-    if gui.info['save_choice']:
-        write_config(gui.info['email'], gui.info['password'], "False")
-    else:
-        write_config(gui.info['email'], "", "True")
 
 
 def gui_mode_details_edits(gui):
@@ -303,9 +313,12 @@ def parse_arguments():
     return vars(args)
 
 
-def create_driver():
-    """Create the appropriate driver for the session."""
-    run_headless = get_setting('settings', 'headless', boolean=True)
+def create_driver(run_headless):
+    """Create the appropriate driver for the session.
+
+    Args:
+        run_headless (bool): Run in headless mode or not
+    """
     if run_headless:
         print(('Opening a headless computer controlled browser and updating '
                'Goodreads'))
@@ -316,54 +329,27 @@ def create_driver():
     return webdriver.Firefox()
 
 
-def get_setting(section, option, boolean=False):
-    """Return the value associated with option under section in settings.
+def check_and_prompt_for_email_password(settings_dict):
+    """Assess if email and password are missing and if so prompt for them.
 
     Args:
-        section (str): The section the information is under in the config.
-        option (str): The option to retrieve and return the value of.
-        boolean (bool): Whether the information to retrieve is a boolean value
-
-    Returns:
-        String or boolean representing the value retrieved by the args.
-
+        settings (dict): Dictionary of user settings
     """
-    config = configparser.ConfigParser()
-    config.read('settings.ini')
-    if boolean:
-        value = config.getboolean(section, option)
-    else:
-        value = config.get(section, option)
-    return value
+    if not settings_dict['email']:
+        settings_dict['email'] = input('Email: ')
 
-
-def user_info():
-    """Prompt for missing user information and manage the password prompt.
-
-    Returns:
-        Tuple containing prompted for email, password and optionally prompt.
-
-    """
-    email = get_setting('user', 'email')
-    if not email:
-        email = input('Email: ')
-    password = get_setting('user', 'password')
-    if not password:
+    if not settings_dict['password']:
         password = input('Password: ')
-        if not get_setting('settings', 'prompt', boolean=True):
-            return (email, password)
-
-        save = input("Save Password?(y/n): ")
-        if save.lower() == 'y':
-            write_config(email, password, "True")
-        elif save.lower() == 'n':
-            disable = input("Disable save Password prompt?(y/n): ")
-            if disable.lower() == 'y':
-                write_config(email, "", "False")
-            else:
-                write_config(email, "", "True")
-
-    return (email, password)
+        if settings_dict['prompt']:
+            save = input("Save Password?(y/n): ")
+            if save.lower() == 'y':
+                settings_dict['password'] = password
+            elif save.lower() == 'n':
+                disable = input("Disable save Password prompt?(y/n): ")
+                if disable.lower() == 'y':
+                    settings_dict['prompt'] = False
+                else:
+                    settings_dict['prompt'] = True
 
 
 def write_initial_config():
@@ -661,7 +647,7 @@ def category_and_genre(shelves):
     return (category, genre)
 
 
-def input_info(year_sheet, info, date):
+def input_info(path, year_sheet, info, date):
     """Write the book information to the first blank row on the given sheet.
 
     Args:
@@ -670,7 +656,6 @@ def input_info(year_sheet, info, date):
         date (str): Date to input in the 'Read date' column.
 
     """
-    path = get_setting('settings', 'path')
     workbook = openpyxl.load_workbook(path)
 
     existing_sheets = workbook.sheetnames
@@ -735,23 +720,25 @@ def main():
     except FileNotFoundError:
         write_initial_config()
 
+    settings = retrieve_settings()
+
     if 'gui' in args:
         gui_instance = create_gui()
-        send_gui_info_to_write(gui_instance)
         details = gui_mode_details_edits(gui_instance)
 
     else:
         details = args
-        details['email'], details['password'] = user_info()
+        check_and_prompt_for_email_password(settings)
         # Process date if given as (t)oday or (y)esterday into proper format
         if details['date'].lower() == 't':
             details['date'] = get_date_str()
         elif details['date'].lower() == 'y':
             details['date'] = get_date_str(True)
 
-    driver = create_driver()
+    driver = create_driver(settings['headless'])
+
     driver.implicitly_wait(10)
-    goodreads_login(driver, details['email'], details['password'])
+    goodreads_login(driver, settings['email'], settings['password'])
     if 'url' in details:
         url = details['url']
         driver.get(url)
@@ -784,12 +771,14 @@ def main():
     info = parse_page(url)
     info['category'], info['genre'] = category_and_genre(shelves)
     year_sheet = '20' + details['date'][-2:]
-    input_info(year_sheet, info, details['date'])
+    input_info(settings['path'], year_sheet, info, details['date'])
 
     print(('Ligrarian has completed and will now close. The following '
            'information has been written to the spreadsheet:'))
     print(info['title'], info['author'], info['pages'],
           info['category'], info['genre'], details['date'], sep='\n')
+
+    write_config(settings['email'], settings['password'], settings['prompt'])
 
 
 if __name__ == '__main__':
