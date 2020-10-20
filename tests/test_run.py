@@ -27,7 +27,7 @@ def review_function_cluster(driver, book_info, reread, shelves, url):
         ligrarian.goodreads_shelve(driver, shelves)
 
 
-def test_run():
+def run_test():
     """Perform the Ligrarian test run."""
     email = ligrarian.get_setting('User', 'Email')
     password = ligrarian.get_setting('User', 'Password')
@@ -128,4 +128,4 @@ def test_run():
 
 
 if __name__ == '__main__':
-    test_run()
+    run_test()
