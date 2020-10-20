@@ -100,7 +100,7 @@ class TestCheckAndPromptForEmailPassword:
         assert mock.call('Password: ') not in mock_input.call_args_list
 
     @mock.patch('ligrarian.input')
-    def test_no_password_input_if_set(self, mock_input):
+    def test_password_input_if_set(self, mock_input):
         """If password is not set then prompt for it."""
         mock_settings = {'email': 'email', 'password': '', 'prompt': True}
         ligrarian.check_and_prompt_for_email_password(mock_settings)
