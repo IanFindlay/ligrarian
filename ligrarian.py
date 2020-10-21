@@ -647,7 +647,46 @@ def category_and_genre(shelves):
     return (category, genre)
 
 
-def input_info(path, year_sheet, info, date):
+def check_year_sheet_exists(path, year_sheet):
+    """Check year_sheet exists in path workbook, call create if not.
+
+    Args:
+        path (str): Path to spreadsheet to check
+        year_sheet (str): The year the book was read formatted YYYY.
+
+    Return:
+        workbook (obj): openpyxl workbook object.
+    """
+    workbook = openpyxl.load_workbook(path)
+
+    existing_sheets = workbook.sheetnames
+    if year_sheet not in existing_sheets:
+        create_sheet(workbook, existing_sheets[-1], year_sheet)
+
+    return workbook
+
+
+def create_sheet(workbook, sheet_to_copy, new_sheet_name):
+    """Create a new sheet by copying and modifying a different one.
+
+    Args:
+        workbook (obj): openpyxl workbook object.
+        sheet_to_copy (str): Name of the sheet to copy.
+        new_sheet_name (str): Name (year formatted YYYY) to name new sheet.
+
+    """
+    sheet = workbook.copy_worksheet(workbook[sheet_to_copy])
+    sheet.title = new_sheet_name
+    last_row = first_blank_row(sheet)
+    while last_row > 1:
+        for col in range(1, 7):
+            sheet.cell(row=last_row, column=col).value = None
+        last_row -= 1
+    day_tracker = '=(TODAY()-DATE({},1,1))/7'.format(new_sheet_name)
+    sheet.cell(row=5, column=9).value = day_tracker
+
+
+def input_info(workbook, year_sheet, info, date):
     """Write the book information to the first blank row on the given sheet.
 
     Args:
@@ -656,12 +695,6 @@ def input_info(path, year_sheet, info, date):
         date (str): Date to input in the 'Read date' column.
 
     """
-    workbook = openpyxl.load_workbook(path)
-
-    existing_sheets = workbook.sheetnames
-    if year_sheet not in existing_sheets:
-        create_sheet(workbook, existing_sheets[-1], year_sheet)
-
     for sheet in [year_sheet, 'Overall']:
         sheet = workbook[sheet]
 
@@ -675,26 +708,6 @@ def input_info(path, year_sheet, info, date):
         sheet.cell(row=input_row, column=6).value = date
 
     workbook.save(path)
-
-
-def create_sheet(workbook, sheet_to_copy, new_sheet_name):
-    """Create a new sheet by copying and modifying a different one.
-
-    Args:
-        workbook (obj): openpyxl workbook object.
-        sheet_to_copy (str): Name of the sheet to copy.
-        new_sheet_name (str): Name (year formatted YYYY) to name the new sheet.
-
-    """
-    sheet = workbook.copy_worksheet(workbook[sheet_to_copy])
-    sheet.title = new_sheet_name
-    last_row = first_blank_row(sheet)
-    while last_row > 1:
-        for col in range(1, 7):
-            sheet.cell(row=last_row, column=col).value = None
-        last_row -= 1
-    day_tracker = '=(TODAY()-DATE({},1,1))/7'.format(new_sheet_name)
-    sheet.cell(row=5, column=9).value = day_tracker
 
 
 def first_blank_row(sheet):
@@ -770,7 +783,9 @@ def main():
     print('Updating Spreadsheet...')
     info = parse_page(url)
     info['category'], info['genre'] = category_and_genre(shelves)
-    year_sheet = '20' + details['date'][-2:]
+    year_sheet = details['date'][-4:]
+    workbook = check_year_sheet_exists(settings['path'], year_sheet)
+
     input_info(settings['path'], year_sheet, info, details['date'])
 
     print(('Ligrarian has completed and will now close. The following '
