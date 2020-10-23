@@ -181,7 +181,7 @@ class Gui:
         self.mode = self.mode.get()
         self.settings['email'] = self.email.get()
         password = self.password.get()
-        if save_choice.get():
+        if self.save_choice.get():
             self.settings['password'] = password
 
         if password == '********':
@@ -656,6 +656,7 @@ def check_year_sheet_exists(path, year_sheet):
 
     Return:
         workbook (obj): openpyxl workbook object.
+
     """
     workbook = openpyxl.load_workbook(path)
 
@@ -686,26 +687,28 @@ def create_sheet(workbook, sheet_to_copy, new_sheet_name):
     sheet.cell(row=5, column=9).value = day_tracker
 
 
-def input_info(workbook, year_sheet, info, date):
+def input_info(workbook, info, date, path):
     """Write the book information to the first blank row on the given sheet.
 
     Args:
-        year_sheet (str): The year the book was read formatted YYYY.
+        workbook (obj): openpyxl workbook object.
         info (dict): Information about the book.
         date (str): Date to input in the 'Read date' column.
+        path (str): Path to spreadsheet.
 
     """
-    for sheet in [year_sheet, 'Overall']:
+    for sheet in [date[-4:], 'Overall']:
         sheet = workbook[sheet]
 
         input_row = first_blank_row(sheet)
 
-        sheet.cell(row=input_row, column=1).value = info['title']
-        sheet.cell(row=input_row, column=2).value = info['author']
-        sheet.cell(row=input_row, column=3).value = info['pages']
-        sheet.cell(row=input_row, column=4).value = info['category']
-        sheet.cell(row=input_row, column=5).value = info['genre']
-        sheet.cell(row=input_row, column=6).value = date
+        values_to_write = [
+                info['title'], info['author'],
+                info['pages'], info['category'],
+                info['genre'], date
+        ]
+        for number, value in enumerate(values_to_write, 1):
+            sheet.cell(row=input_row, column=number).value = value
 
     workbook.save(path)
 
@@ -736,7 +739,7 @@ def main():
     settings = retrieve_settings()
 
     if 'gui' in args:
-        gui_instance = create_gui()
+        gui_instance = create_gui(settings)
         details = gui_mode_details_edits(gui_instance)
 
     else:
@@ -783,10 +786,9 @@ def main():
     print('Updating Spreadsheet...')
     info = parse_page(url)
     info['category'], info['genre'] = category_and_genre(shelves)
-    year_sheet = details['date'][-4:]
-    workbook = check_year_sheet_exists(settings['path'], year_sheet)
+    workbook = check_year_sheet_exists(settings['path'], details['date'][-4:])
 
-    input_info(settings['path'], year_sheet, info, details['date'])
+    input_info(workbook, info, details['date'], settings['path'])
 
     print(('Ligrarian has completed and will now close. The following '
            'information has been written to the spreadsheet:'))
