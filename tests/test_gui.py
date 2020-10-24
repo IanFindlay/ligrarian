@@ -57,3 +57,53 @@ class TestGuiModeDetailsEdits:
         mock_gui = self.FakeGui()
         info = ligrarian.gui_mode_details_edits(mock_gui)
         assert info == {'url': "fake main"}
+
+
+class TestModeSwitchMethod:
+    """Mode switch adds/removes labels, menus and main text."""
+
+    def test_mode_true_removes_format_label(self):
+        """Call grid_remove on format label."""
+        mock_Gui = mock.MagicMock()
+        mock_Gui.mode.return_value = True
+        ligrarian.Gui.mode_switch(mock_Gui)
+
+        mock_Gui.format_label.grid_remove.assert_called_once()
+
+    def test_mode_true_removes_format_menu(self):
+        """Call grid_remove on format label."""
+        mock_Gui = mock.MagicMock()
+        ligrarian.Gui.mode_switch(mock_Gui)
+
+        mock_Gui.format_menu.grid_remove.assert_called_once()
+
+    def test_mode_true_configures_main_label_to_URL(self):
+        """Call configure(text='URL') on main label."""
+        mock_Gui = mock.MagicMock()
+        ligrarian.Gui.mode_switch(mock_Gui)
+
+        mock_Gui.main_label.configure.assert_called_once_with(text='URL')
+
+    def test_mode_false_grids_format_label(self):
+        """Call grid on format label."""
+        mock_Gui = mock.MagicMock()
+        mock_Gui.mode.get.return_value = False
+        ligrarian.Gui.mode_switch(mock_Gui)
+
+        mock_Gui.format_label.grid.assert_called_once()
+
+    def test_mode_true_grids_format_menu(self):
+        """Call grid on format label."""
+        mock_Gui = mock.MagicMock()
+        mock_Gui.mode.get.return_value = False
+        ligrarian.Gui.mode_switch(mock_Gui)
+
+        mock_Gui.format_menu.grid.assert_called_once()
+
+    def test_mode_true_configures_main_label_to_search(self):
+        """Call configure(text='search') on main label."""
+        mock_Gui = mock.MagicMock()
+        mock_Gui.mode.get.return_value = False
+        ligrarian.Gui.mode_switch(mock_Gui)
+
+        mock_Gui.main_label.configure.assert_called_once_with(text='Search')
