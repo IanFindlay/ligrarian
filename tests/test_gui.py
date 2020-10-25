@@ -107,3 +107,40 @@ class TestModeSwitchMethod:
         ligrarian.Gui.mode_switch(mock_Gui)
 
         mock_Gui.main_label.configure.assert_called_once_with(text='Search')
+
+
+class TestSetDateGuiMethod:
+    """Deletes placeholder and inserts correct date (today/yesterday)."""
+
+    def mock_date(self, yesterday=False):
+        """."""
+        today_datetime = ligrarian.dt.now()
+        if yesterday:
+            return ligrarian.dt.strftime(
+                    today_datetime - ligrarian.timedelta(1), '%d/%m/%Y')
+        return ligrarian.dt.strftime(today_datetime, '%d/%m/%Y')
+
+    def test_deletes_eight_char_placeholder(self):
+        """Delete called on date."""
+        mock_Gui = mock.MagicMock()
+        ligrarian.Gui.set_date(mock_Gui)
+
+        mock_Gui.date.delete.assert_called_once_with(0, 8)
+
+    def test_default_calls_insert_with_todays_date(self):
+        """Delete called on date."""
+        ligrarian.get_date_str = self.mock_date
+        mock_Gui = mock.MagicMock()
+        ligrarian.Gui.set_date(mock_Gui)
+
+        mock_Gui.date.insert.assert_called_once_with(0, self.mock_date())
+
+    def test_true_calls_insert_with_yesterdays_date(self):
+        """Delete called on date."""
+        ligrarian.get_date_str = self.mock_date
+        mock_Gui = mock.MagicMock()
+        ligrarian.Gui.set_date(mock_Gui, True)
+
+        mock_Gui.date.insert.assert_called_once_with(
+                0, self.mock_date(True)
+        )
