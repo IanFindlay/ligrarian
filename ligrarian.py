@@ -379,7 +379,7 @@ def write_config(email, password, prompt):
     config.read('settings.ini')
     config.set('user', 'email', email)
     config.set('user', 'password', password)
-    config.set('settings', 'prompt', prompt)
+    config.set('settings', 'prompt', str(prompt))
 
     with open('settings.ini', 'w') as configfile:
         config.write(configfile)
