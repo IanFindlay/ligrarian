@@ -54,3 +54,24 @@ class TestCategoryAndGenre:
         assert ligrarian.category_and_genre(
                 ["No Category", "Genre"]) == ("Fiction", "No Category")
 
+
+class TestGetShelvedStatus:
+    """Test function returns correct boolean for shelved and unshelved."""
+
+    @mock.patch('ligrarian.webdriver.firefox')
+    def test_shelved_returns_true(self, mocked_driver):
+        """Seleniums NoSuchElementException being raised indicates shelved."""
+        mocked_driver.find_element_by_class_name.side_effect = (
+                ligrarian.NoSuchElementException
+        )
+        read_status = ligrarian.goodreads_get_shelved_status(mocked_driver)
+
+        assert read_status is True
+
+    @mock.patch('ligrarian.webdriver.firefox')
+    def test_unshelved_book_returns_false(self, mocked_driver):
+        """Successfull element_by_class_name query indicated unshelved."""
+        mocked_driver.find_element_by_class_name.return_value = "Found"
+        read_status = ligrarian.goodreads_get_shelved_status(mocked_driver)
+
+        assert read_status is False

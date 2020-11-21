@@ -483,6 +483,26 @@ def goodreads_get_shelves(driver, rating):
     return shelves
 
 
+def goodreads_get_shelved_status(driver):
+    """Return whether the book is currently shelved.
+
+    Unshelved books have the class 'wtrRight.wtrUp' which shelved do not so
+    they can be differentatied by trying to find this element.
+
+    Args:
+        driver: Selenium webdriver to act upon.
+
+    Returns:
+        Boolean
+
+    """
+    try:
+        driver.find_element_by_class_name('wtrRight.wtrUp')
+        return False
+    except NoSuchElementException:
+        return True
+
+
 def goodreads_date_input(driver, date_done, reread):
     """Select completion date on review page, add new selectors for rereads.
 
@@ -764,11 +784,9 @@ def main():
 
     shelves = goodreads_get_shelves(driver, details['rating'])
 
-    # Use rating element to see if book has been read before
-    rating_elem = driver.find_element_by_class_name('stars')
-    reread = rating_elem.get_attribute('data-rating') != '0'
+    shelved_status = goodreads_get_shelved_status(driver)
 
-    goodreads_date_input(driver, details['date'], reread)
+    goodreads_date_input(driver, details['date'], shelved_status)
 
     if details['review']:
         goodreads_add_review(driver, details['review'])
@@ -777,7 +795,7 @@ def main():
     driver.get(url)
     goodreads_rate_book(driver, details['rating'])
 
-    if not reread:
+    if not shelved_status:
         goodreads_shelve(driver, shelves)
 
     driver.close()
