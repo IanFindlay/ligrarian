@@ -180,12 +180,12 @@ class Gui:
         """Create input dictionary and test required info has been given."""
         self.mode = self.mode.get()
         self.settings['email'] = self.email.get()
-        password = self.password.get()
-        if self.save_choice.get():
-            self.settings['password'] = password
 
+        password = self.password.get()
         if password == '********':
             password = self.settings['password']
+        if self.save_choice.get():
+            self.settings['password'] = password
 
         self.info = {
             'main': self.main.get(),
