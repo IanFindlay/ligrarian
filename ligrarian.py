@@ -394,7 +394,7 @@ def goodreads_login(driver, email, password):
         password (str): Password to be entered.
 
     """
-    driver.get('https://goodreads.com')
+    driver.get('https://goodreads.com/user/sign_in')
 
     driver.find_element_by_name('user[email]').send_keys(email)
     pass_elem = driver.find_element_by_name('user[password]')
