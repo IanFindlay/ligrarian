@@ -221,7 +221,7 @@ def retrieve_settings():
     for section in config.sections():
         for key, value in config.items(section):
             if key in ['prompt', 'headless']:
-                value = bool(value)
+                value = bool(value == "True")
             settings[key] = value
 
     return settings
