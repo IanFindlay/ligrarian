@@ -12,13 +12,13 @@ Args:
         Title of Book: Enclosed in double quotation marks
         Author of Book: Enclosed in double quotation marks
         Format: (p)aperback, (h)ardcover, (k)indle or (e)book
-        Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YY
+        Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YYYY
         Rating: Number between 1 and 5
         Review (Optional): Enclosed in double quotation marks
 
     url arguments:
         URL: Goodreads URL for the book
-        Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YY
+        Read Date: (t)oday, (y)esterday or a date formatted DD/MM/YYYY
         Rating: Number between 1 and 5
         Review (Optional): Enclosed in double quotation marks
 """
@@ -128,8 +128,8 @@ class Gui:
         self.format_menu.grid(row=6, column=2, columnspan=3,
                               sticky='W', pady=5)
 
-        self.date = tk.Entry(self.master, width=8)
-        self.date.insert(0, 'DD/MM/YY')
+        self.date = tk.Entry(self.master, width=10)
+        self.date.insert(0, 'DD/MM/YYYY')
         self.date.grid(row=5, column=2, sticky='W', pady=10, ipady=3, ipadx=5)
 
         today_button = tk.Button(self.master, text="Today",
@@ -173,7 +173,7 @@ class Gui:
             yesterday (bool): Whether to set date to yesterday's date or not.
 
         """
-        self.date.delete(0, 8)
+        self.date.delete(0, 10)
         self.date.insert(0, get_date_str(yesterday))
 
     def parse_input(self):
@@ -259,7 +259,7 @@ def get_date_str(yesterday=False):
         yesterday (bool): Whether to get yesterday's date or not.
 
     Returns:
-        Strftime datetime of today's or yesterday's date formatted 'DD/MM/YY'.
+        Strftime datetime of today's or yesterday's date formatted 'DD/MM/YYYY'.
 
     """
     today_datetime = dt.now()
@@ -282,7 +282,7 @@ def parse_arguments():
     url_parser.add_argument('url', metavar="url",
                             help="Book's Goodreads URL within quotes")
     url_parser.add_argument('date', help=("(t)oday, (y)esterday or "
-                                          "date formatted DD/MM/YY"))
+                                          "date formatted DD/MM/YYYY"))
     url_parser.add_argument('rating', type=int, metavar='rating',
                             choices=[1, 2, 3, 4, 5],
                             help="A number 1 through 5")
@@ -298,7 +298,7 @@ def parse_arguments():
                                help="(p)aperback, (h)ardcover, "
                                     "(k)indle, (e)book")
     search_parser.add_argument('date', help=("(t)oday, (y)esterday or "
-                                             "date formatted DD/MM/YY"))
+                                             "date formatted DD/MM/YYYY"))
     search_parser.add_argument('rating', type=int, metavar='rating',
                                choices=[1, 2, 3, 4, 5],
                                help="A number 1 through 5")
@@ -508,7 +508,7 @@ def goodreads_date_input(driver, date_done, reread):
 
     Args:
         driver: Selenium webdriver to act upon.
-        date_done (str): Date formatted DD/MM/YY.
+        date_done (str): Date formatted DD/MM/YYYY.
         Reread (str or None): String of a number 1-5, essentially acting as
                               the boolean True, or None acting as False.
 
