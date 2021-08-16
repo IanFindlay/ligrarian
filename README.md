@@ -80,6 +80,6 @@ Would mark the book at the given URL as having been read today and it would be r
 * The first letter of the operational mode can be used instead of the full word i.e. 'g' rather than 'gui'
 * The search terms must be enclosed in quotes if multiple words are used
 * The first letter of the format can be used i.e. (p)aperback, (h)ardcover, (k)indle or (e)book
-* The date can be (t)oday, (y)esterday or any date written in the DD/MM/YY format e.g. 01/01/18 for 1st January 2018
+* The date can be (t)oday, (y)esterday or any date written in the DD/MM/YYYY format e.g. 01/01/18 for 1st January 2018
 * The rating is a number between 1 and 5
 * The review is also enclosed in quotes but is entirely optional in both modes.
