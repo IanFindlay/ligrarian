@@ -1,4 +1,4 @@
 beautifulsoup4==4.6.3
 openpyxl==2.5.9
-requests==2.32.0
+requests==2.32.4
 selenium==3.14.1
